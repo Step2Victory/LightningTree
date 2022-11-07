@@ -1,8 +1,12 @@
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <random>
 #include "ExternalField.h"
 
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<> dis(0, 1.0);
 
 
 class LightningTree
@@ -21,9 +25,10 @@ class LightningTree
         double sigma;
     };
 
-    std::map<Charge*, std::array<Edge*, 26>> graph;
+    std::map<Charge*, std::vector<Edge*>> graph;
     std::vector<Edge*> edges;
     std::vector<Charge*> charges;
+    
 
     uint64_t iter_number;
 
@@ -46,6 +51,43 @@ class LightningTree
     double beta = 0;
     double sigma;
     ExternalField phi_a;
+    
+
+    double qCountPotential(const Charge& charge, const Vector& point)
+    {
+        return 0;
+    }
+
+    double qCountPotential(const std::vector<Charge*>& charge, const Vector& point)
+    {
+        return 0;
+    }
+
+    double QCountPotential(const Charge& charge, const Vector& point)
+    {
+        return 0;
+    }
+
+    double QCountPotential(const std::vector<Charge*>& charge, const Vector& point)
+    {
+        return 0;
+    }
+
+    double ElectricFieldAlongEdge(const Edge* edge)
+    {
+        return 0;
+    }
+
+    double CurrentAlongEdge(const Edge* edge)
+    {
+        return 0;
+    }
+
+    double ElectricFieldAlongEdgeRad(const Edge* edge)
+    {
+        return 0;
+    }
+
 public:
 
     LightningTree();
@@ -66,11 +108,16 @@ public:
     void NextIterCharges() // count new charges
     {}
     
-    void NextIterEdges() // count new edges
-    {}    
+    void NextIterEdges() // count new edges using dis
+    {
+        
+    }    
 
-    std::map<Charge*, std::array<Edge*, 26>> GetGraph() const;
+    std::map<Charge*, std::vector<Edge*>> GetGraph() const;
 
-    
+    ~LightningTree()
+    {
+
+    }
 
 };
