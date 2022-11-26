@@ -3,18 +3,23 @@
 //#include <iostream>
 
 int main(){
-    //std::map<std::string, double> params = {{"a", 0}};
-    ExternalField ef = ExternalField();
-    LightningTree lt = {5, 1, 1, 1, 10, 10, 10, 0.1, 1, 0.01, 0.1, 1, -1, 150'000, 1, 1, 1, 1, ef};
+    // //std::map<std::string, double> params = {{"a", 0}};
+    // ExternalField ef = ExternalField();
+    // LightningTree lt = {5, 1, 1, 1, 10, 10, 10, 0.1, 1, 0.01, 0.1, 1, -1, 150'000, 1, 1, 1, 1, ef};
 
-    lt.NextIter();
+    // lt.NextIter();
     
-    auto graph = lt.GetGraph();
-    
-    for(auto elem: graph){
+    // auto graph = lt.GetGraph();
 
-        std::cout << (*elem.first).point<<std::endl;
-    }
+    // auto el = *graph.begin()->first;
+
+    // cout << el.q;
+    
+    // // for(auto elem: graph){
+
+    // //     std::cout << (*elem.first).point<<std::endl;
+    // // }
+    std::cout << "Hello World!";
 
     return 0;
 }
