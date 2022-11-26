@@ -201,7 +201,7 @@ public:
         charges.push_back(_from);
         charges.push_back(_to);
         edges.push_back(edge);
-        graph[_to].push_back(edge);
+        graph[_from].push_back(edge);
     }
 
     void NextIter() // combine charges and edges count
