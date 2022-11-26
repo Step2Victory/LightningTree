@@ -54,9 +54,13 @@ class ExternalField
 {
 private:
     FieldType type;
-    std::map<std::string, double> params;
+    std::unordered_map<std::string, double> params;
 public:
-    ExternalField(FieldType type, std::map<std::string, double> params) : type(type), params(params)
+    ExternalField(): type(FieldType::constField)
+    {
+        params["electricity"] = 1;
+    }
+    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params)
     {}
     double getValue(const Vector& r)
     {

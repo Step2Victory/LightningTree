@@ -164,7 +164,7 @@ class LightningTree
 
 public:
 
-    LightningTree();
+    LightningTree() = default;
     LightningTree(double h,
     double x_min, double y_min, double z_min, double x_max, double y_max, double z_max,
     double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
