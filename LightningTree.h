@@ -97,8 +97,8 @@ class LightningTree
     double ElectricFieldAlongEdge(const Edge* edge)
     {
         double l = Abs(edge->from->point - edge->to->point);
-        double phi_1 = qCountPotential(charges, edge->from->point) + QCountPotential(charges, edge->from->point);
-        double phi_2 = qCountPotential(charges, edge->to->point) + QCountPotential(charges, edge->to->point);
+        double phi_1 = qCountPotential(charges, edge->from->point) + QCountPotential(charges, edge->from->point) + phi_a.getValue(edge->from->point);
+        double phi_2 = qCountPotential(charges, edge->to->point) + QCountPotential(charges, edge->to->point) + phi_a.getValue(edge->to->point);
         return -(phi_1 - phi_2) / l;
     }
 
@@ -217,9 +217,10 @@ public:
                         Edge * edge = new Edge{.from = charge, .to = new_charge, .sigma = sigma};
                         if (!Find(new_charge, edges) && MakeEdge(edge))
                         {
+                            edges.push_back(edge);
                             charges.push_back(new_charge);
                             graph[charge].push_back(edge);
-                            graph[new_charge].push_back(new Edge{.from = new_charge, .to = charge, .sigma = sigma});
+                            // graph[new_charge].push_back(new Edge{.from = new_charge, .to = charge, .sigma = sigma});
                         }
                         else
                         {
@@ -233,14 +234,29 @@ public:
         iter_number_edges++;
     }    
 
-    std::map<Charge*, std::vector<Edge*>> GetGraph() const
+    std::map<Charge, std::vector<Edge>> GetGraph() const
     {
-        return graph;
+        std::map<Charge, std::vector<Edge>> ans;
+        for (auto elem: graph)
+        {
+            for (auto edge: elem.second)
+            {
+                ans[*elem.first].push_back(*edge);
+            }
+        }
+        return ans;
     }
 
     ~LightningTree()
     {
-
+        for (auto edge: edges)
+        {
+            delete edge;
+        }
+        for (auto charge: charges)
+        {
+            delete charge;
+        }   
     }
 
 };

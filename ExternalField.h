@@ -16,7 +16,14 @@ private:
 public:
     ExternalField(FieldType type, std::map<std::string, double> params) : type(type), params(params)
     {}
-    Vector getValue(Vector r);
+    double getValue(Vector r)
+    {
+        if (type == FieldType::constField) // поле направлено вдоль оси z, значение напряженности хранится по ключу electricity
+        {
+            return r.data[2] * params["electricity"]; // потенциал отсчитываем от начала координат
+        }
+        return 0;
+    }
     ~ExternalField();
 };
 
