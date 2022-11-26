@@ -16,32 +16,32 @@ constexpr double pi = 3.1415926535;
 
 constexpr double kEps = 1e-9;
 
+struct Charge
+{
+    Vector point;
+    double q;
+    double Q;
+
+    Charge GetMirror()
+    {
+        return {.point={point.data[0], point.data[1], -point.data[2]}, .q=-q, .Q=-Q};
+    }
+
+    bool operator==(const Charge& rhs) const
+    {
+        return true;
+    }
+};
+
+struct Edge
+{
+    Charge* from;
+    Charge* to;
+    double sigma;
+};
+
 class LightningTree
 {
-    struct Charge
-    {
-        Vector point;
-        double q;
-        double Q;
-
-        Charge GetMirror()
-        {
-            return {.point={point.data[0], point.data[1], -point.data[2]}, .q=-q, .Q=-Q};
-        }
-
-        bool operator==(const Charge& rhs) const
-        {
-            return true;
-        }
-    };
-
-    struct Edge
-    {
-        Charge* from;
-        Charge* to;
-        double sigma;
-    };
-
     std::unordered_map<Charge*, std::vector<Edge*>> graph;
     std::vector<Edge*> edges;
     std::vector<Charge*> charges;
