@@ -70,7 +70,6 @@ public:
         }
         return 0;
     }
-    ~ExternalField();
 };
 
 
