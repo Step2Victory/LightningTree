@@ -31,6 +31,7 @@ struct Vector
 {
     std::array<double, 3> data;
 
+    // перегружены арифметические операции с векторами
     Vector operator-=(const Vector& rhs)
     {
         data[0] -= rhs.data[0];
@@ -54,8 +55,8 @@ struct Vector
     {
         return {{data[0] + rhs.data[0], data[1] + rhs.data[1], data[2] + rhs.data[2]}};
     }
-
-    double Dot(const Vector& rhs) const // DotProduct
+    
+    double Dot(const Vector& rhs) const // скалярное произведение
     {
         return data[0] * rhs.data[0] + data[1] * rhs.data[1] + data[2] * rhs.data[2];
     }
@@ -67,7 +68,7 @@ struct Vector
 
 };
 
-double Abs(const Vector& vector)
+double Abs(const Vector& vector) // модуль вектора
 {
     return std::sqrt(vector.Dot(vector));
 }

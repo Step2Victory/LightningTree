@@ -69,7 +69,7 @@ class LightningTree
         return charge.q / (4 * pi * epsilon_0 * (Abs(charge.point - point) + r));
     }
 
-    double qCountPotential(const std::vector<Charge*>& charge, const Vector& point)
+    double qCountPotential(const std::vector<Charge*>& charge, const Vector& point) // реализация формулы (4) из Leaders.pdf
     {
         double ans = 0;
         for (size_t i = 0; i < charge.size(); ++i)
@@ -84,7 +84,7 @@ class LightningTree
         return charge.Q / (4 * pi * epsilon_0 * (Abs(charge.point - point) + R));
     }
 
-    double QCountPotential(const std::vector<Charge*>& charge, const Vector& point)
+    double QCountPotential(const std::vector<Charge*>& charge, const Vector& point) // реализация формулы (5) из Leaders.pdf
     {
         double ans = 0;
         for (size_t i = 0; i < charge.size(); ++i)
@@ -94,15 +94,15 @@ class LightningTree
         return ans;
     }
 
-    double ElectricFieldAlongEdge(const Edge* edge)
+    double ElectricFieldAlongEdge(const Edge* edge) // реализация формулы (7) из Leaders.pdf
     {
         double l = Abs(edge->from->point - edge->to->point);
-        double phi_1 = qCountPotential(charges, edge->from->point) + QCountPotential(charges, edge->from->point) + phi_a.getValue(edge->from->point);
+        double phi_1 = qCountPotential(charges, edge->from->point) + QCountPotential(charges, edge->from->point) + phi_a.getValue(edge->from->point); // формула (6)
         double phi_2 = qCountPotential(charges, edge->to->point) + QCountPotential(charges, edge->to->point) + phi_a.getValue(edge->to->point);
         return -(phi_1 - phi_2) / l;
     }
 
-    double CurrentAlongEdge(const Edge* edge)
+    double CurrentAlongEdge(const Edge* edge) // реализация формулы (8) из Leaders.pdf
     {
         return pi * r * r * edge->sigma * ElectricFieldAlongEdge(edge);
     }
@@ -121,7 +121,7 @@ class LightningTree
         return 0;
     }
 
-    double CurrentSheath(const Charge& charge)
+    double CurrentSheath(const Charge& charge) // реализация формулы (10) из Leaders.pdf
     {
         if (charge.q > 0)
         {
@@ -130,10 +130,11 @@ class LightningTree
         return resistance * charge.q / abs(charge.q) * Heaviside((abs(charge.q) - q_minus_max) / r);  
     }
 
-    bool MakeEdge(Edge* edge)
+    bool MakeEdge(Edge* edge) 
     {
         double probability = dis(gen);
         double E = ElectricFieldAlongEdge(edge);
+        // реализация формулы (12) из Leaders.pdf
         if (E > 0)
         {
             return (1 - std::exp(-std::pow((E / E_plus), 2.5))) > probability;
@@ -141,7 +142,7 @@ class LightningTree
         return (1 - std::exp(-std::pow((E / E_minus), 2.5))) > probability;
     }
 
-    bool Find(Charge * charge, std::vector<Edge*> edges)
+    bool Find(Charge * charge, std::vector<Edge*> edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
     {
         for (auto * edge : edges)
         {
@@ -234,7 +235,7 @@ public:
         iter_number_edges++;
     }    
 
-    std::map<Charge, std::vector<Edge>> GetGraph() const
+    std::map<Charge, std::vector<Edge>> GetGraph() const // возвращает копию текущего состояния графа
     {
         std::map<Charge, std::vector<Edge>> ans;
         for (auto elem: graph)
@@ -247,7 +248,7 @@ public:
         return ans;
     }
 
-    ~LightningTree()
+    ~LightningTree() // деструктор освобождает память
     {
         for (auto edge: edges)
         {
