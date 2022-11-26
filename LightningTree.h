@@ -142,11 +142,11 @@ class LightningTree
         return (1 - std::exp(-std::pow((E / E_minus), 2.5))) > probability;
     }
 
-    bool Find(Charge * charge, std::vector<Edge*> edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
+    bool Find(Charge * charge, const std::vector<Edge*>& edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
     {
         for (auto * edge : edges)
         {
-            if (Abs(edge->to->point - charge->point) < kEps)
+            if (Abs(edge->to->point - charge->point) < kEps || Abs(edge->from->point - charge->point) < kEps)
             {
                 return true;
             }
