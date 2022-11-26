@@ -131,11 +131,19 @@ class LightningTree
 
     double CurrentSheath(const Charge& charge) // реализация формулы (10) из Leaders.pdf
     {
-        if (charge.q > 0)
+        if (std::abs(charge.q) < kEps)
         {
-            return resistance * charge.q / abs(charge.q) * Heaviside((abs(charge.q) - q_plus_max) / r);
+            return 0;
         }
-        return resistance * charge.q / abs(charge.q) * Heaviside((abs(charge.q) - q_minus_max) / r);  
+        if (charge.q > kEps)
+        {
+            return resistance * charge.q / std::abs(charge.q) * Heaviside((std::abs(charge.q) - q_plus_max) / r);
+        }
+        if (charge.q < kEps)
+        {
+            return resistance * charge.q / std::abs(charge.q) * Heaviside((std::abs(charge.q) - q_minus_max) / r);
+        }
+        
     }
 
     bool MakeEdge(Edge* edge) 
@@ -175,6 +183,16 @@ public:
     sigma(sigma), phi_a(phi_a), iter_number_charges(0), iter_number_edges(0)
     {
         E_minus = 2 * E_plus;
+        double x_middle = (x_min + x_max) / 2;
+        double y_middle = (y_min + y_max) / 2;
+        double z_middle = (z_min + z_max) / 2;
+        Charge * first = new Charge{.point = {x_middle, y_middle, z_middle}, .q = 0.0,.Q= 0.0};
+        Charge * second = new Charge{.point = {x_middle, y_middle, z_middle + h}, .q = 0.0,.Q= 0.0};
+        Edge * edge = new Edge{.from = first, .to = second, .sigma = sigma};
+        charges.push_back(first);
+        charges.push_back(second);
+        edges.push_back(edge);
+        graph[first].push_back(edge);
     }
 
 
