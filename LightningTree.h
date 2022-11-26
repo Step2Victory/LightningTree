@@ -143,7 +143,7 @@ class LightningTree
         {
             return resistance * charge.q / std::abs(charge.q) * Heaviside((std::abs(charge.q) - q_minus_max) / r);
         }
-        
+        return -1;
     }
 
     bool MakeEdge(Edge* edge) 
@@ -195,6 +195,14 @@ public:
         graph[first].push_back(edge);
     }
 
+    void set_edge(Charge* _from, Charge* _to, double _sigma)
+    {
+        Edge * edge = new Edge{.from = _from, .to = _to, .sigma = _sigma};
+        charges.push_back(_from);
+        charges.push_back(_to);
+        edges.push_back(edge);
+        graph[_to].push_back(edge);
+    }
 
     void NextIter() // combine charges and edges count
     {
