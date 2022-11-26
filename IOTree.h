@@ -1,3 +1,4 @@
+#pragma once
 #include "LightningTree.h"
 #include <fstream>
 #include <iostream>
