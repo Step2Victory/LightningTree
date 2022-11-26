@@ -1,7 +1,9 @@
+#pragma once
 #include <vector>
 #include <cstdlib>
 #include <cmath>
 #include <random>
+#include <unordered_map>
 #include "ExternalField.h"
 
 std::random_device rd;
@@ -21,9 +23,15 @@ class LightningTree
         Vector point;
         double q;
         double Q;
+
         Charge GetMirror()
         {
             return {.point={point.data[0], point.data[1], -point.data[2]}, .q=-q, .Q=-Q};
+        }
+
+        bool operator==(const Charge& rhs) const
+        {
+            return true;
         }
     };
 
@@ -34,7 +42,7 @@ class LightningTree
         double sigma;
     };
 
-    std::map<Charge*, std::vector<Edge*>> graph;
+    std::unordered_map<Charge*, std::vector<Edge*>> graph;
     std::vector<Edge*> edges;
     std::vector<Charge*> charges;
     
@@ -181,7 +189,7 @@ public:
 
     void NextIterCharges() // count new charges
     {
-        std::map<Charge*, std::pair<double, double>> delta_charges;
+        std::unordered_map<Charge*, std::pair<double, double>> delta_charges;
         for (auto elem : graph)
         {
             Charge* charge = elem.first;
@@ -235,17 +243,9 @@ public:
         iter_number_edges++;
     }    
 
-    std::map<Charge, std::vector<Edge>> GetGraph() const // возвращает копию текущего состояния графа
+    std::unordered_map<Charge*, std::vector<Edge*>> GetGraph() const // возвращает копию текущего состояния графа
     {
-        std::map<Charge, std::vector<Edge>> ans;
-        for (auto elem: graph)
-        {
-            for (auto edge: elem.second)
-            {
-                ans[*elem.first].push_back(*edge);
-            }
-        }
-        return ans;
+        return graph;
     }
 
     ~LightningTree() // деструктор освобождает память
