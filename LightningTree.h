@@ -31,6 +31,11 @@ struct Charge
     {
         return true;
     }
+
+    string operator+(const Charge& rhs) const
+    {
+        return {"" + rhs.point + "," + rhs.Q + ", " + rhs.q};
+    }
 };
 
 struct Edge
@@ -195,13 +200,13 @@ public:
         graph[first].push_back(edge);
     }
 
-    void set_edge(Charge* _from, Charge* _to, double _sigma)
+    void set_edge(Charge& _from, Charge& _to, double _sigma)
     {
-        Edge * edge = new Edge{.from = _from, .to = _to, .sigma = _sigma};
-        charges.push_back(_from);
-        charges.push_back(_to);
+        Edge * edge = new Edge{.from = &_from, .to = &_to, .sigma = _sigma};
+        charges.push_back(&_from);
+        charges.push_back(&_to);
         edges.push_back(edge);
-        graph[_from].push_back(edge);
+        graph[&_from].push_back(edge);
     }
 
     void NextIter() // combine charges and edges count

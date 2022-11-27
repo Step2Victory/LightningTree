@@ -55,6 +55,11 @@ struct Vector
     {
         return (out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')');
     }
+
+    friend string operator+(string str, const Vector rhs)
+    {
+        return str = "(" + rhs->data[0] + ", " + rhs.data[1] + ", " + rhs.data[2] + ")";
+    }
 };
 
 class ExternalField

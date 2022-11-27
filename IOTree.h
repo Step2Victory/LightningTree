@@ -2,6 +2,7 @@
 #include "LightningTree.h"
 #include <fstream>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ LightningTree GetLightningTreeFromFile(std::string filename)
     /// fin.close(); // закрываем файл
 
     /*
-    LightningTree* tree = ParseTree(fin);
+    ParseTree(fin, tree);
     */
 
     }
@@ -29,7 +30,25 @@ LightningTree GetLightningTreeFromFile(std::string filename)
 
 void WriteInFile(const LightningTree& tree)
 {
-    ofstream fout("LightningTree.txt"); 
-    //fout << ParseToString(tree);
+    ofstream fout("LightningTree.txt", ios_base::out); 
+    fout << ParseToString(tree);
     fout.close();
+}
+
+void ParseTree(ifstream fin)
+{
+
+}
+
+string ParseToString(const LightningTree& tree)
+{
+    string outtree;
+    string outcharges;
+    for(auto elem: tree.GetGraph()){
+        //outcharges += "("+elem.first->point.data[0]+", "+elem.first->point.data[1]+", "+elem.first->point.data[2]+") "+", "+elem.first->Q+", "+elem.first->q+";"+
+        for(int i = 0; i < elem.second.size(); i++)
+        outtree += "" + *elem.second[i]->from + "; "+ *elem.second[i]->to + "; " + elem.second[i]->sigma + ";";
+    }
+
+    return outtree;
 }
