@@ -53,12 +53,12 @@ struct Vector
 
     friend std::ostream& operator<<(std::ostream& out, const Vector& rhs)
     {
-        return (out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')');
+        return {out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')'};
     }
 
-    friend string operator+(string str, const Vector rhs)
+    std::string tostring() const
     {
-        return str = "(" + rhs->data[0] + ", " + rhs.data[1] + ", " + rhs.data[2] + ")";
+        return {"(" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + ", " + std::to_string(data[2]) + ")"};
     }
 };
 

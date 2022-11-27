@@ -6,10 +6,14 @@
 
 using namespace std;
 
+void ParseTree(ifstream fin, LightningTree*);
+
+string TreeToString(const LightningTree&);
+
 LightningTree GetLightningTreeFromFile(std::string filename)
 {
     ifstream fin(filename, ios_base::in);
- 
+    LightningTree* tree = new LightningTree();
     if (!fin.is_open()) // если файл не открыт
         cout << "Файл не может быть открыт!\n"; // сообщить об этом
     else
@@ -31,23 +35,25 @@ LightningTree GetLightningTreeFromFile(std::string filename)
 void WriteInFile(const LightningTree& tree)
 {
     ofstream fout("LightningTree.txt", ios_base::out); 
-    fout << ParseToString(tree);
+    fout << TreeToString(tree);
     fout.close();
 }
 
-void ParseTree(ifstream fin)
+void ParseTree(ifstream fin, LightningTree* tree)
 {
-
+    
 }
 
-string ParseToString(const LightningTree& tree)
+std::string TreeToString(const LightningTree& tree)
 {
-    string outtree;
-    string outcharges;
+    string outtree = "";
+    //string outcharges;
     for(auto elem: tree.GetGraph()){
-        //outcharges += "("+elem.first->point.data[0]+", "+elem.first->point.data[1]+", "+elem.first->point.data[2]+") "+", "+elem.first->Q+", "+elem.first->q+";"+
+        ///outtree += "" + *elem.first ;
         for(int i = 0; i < elem.second.size(); i++)
-        outtree += "" + *elem.second[i]->from + "; "+ *elem.second[i]->to + "; " + elem.second[i]->sigma + ";";
+        {
+            outtree += "\n" + elem.second[i]->from->tostring() + "\n" + elem.second[i]->to->tostring() + "\n" + std::to_string(elem.second[i]->sigma) + "\n";
+        }
     }
 
     return outtree;

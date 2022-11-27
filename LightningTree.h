@@ -32,10 +32,11 @@ struct Charge
         return true;
     }
 
-    string operator+(const Charge& rhs) const
+    std::string tostring() const
     {
-        return {"" + rhs.point + "," + rhs.Q + ", " + rhs.q};
+        return {point.tostring() + ", " + std::to_string(Q) + ", " + std::to_string(q)};
     }
+
 };
 
 struct Edge
