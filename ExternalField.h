@@ -3,6 +3,7 @@
 #include<array>
 #include<map>
 #include<string>
+#include <iostream>
 
 enum FieldType {constField, gaussField};
 
@@ -17,6 +18,7 @@ struct Vector
         data[0] -= rhs.data[0];
         data[1] -= rhs.data[1];
         data[2] -= rhs.data[2];
+
         return *this;
     }
 
@@ -30,6 +32,7 @@ struct Vector
         data[0] += rhs.data[0];
         data[1] += rhs.data[1];
         data[2] += rhs.data[2];
+
         return *this;
     }
 
@@ -48,6 +51,12 @@ struct Vector
         return {-data[0], -data[1], -data[2]};
     }
 
+    friend std::ostream& operator<<(std::ostream& out, const Vector& rhs)
+    {
+        return {out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')'};
+    }
+
+    std::string tostring() const;
 };
 
 class ExternalField
@@ -55,14 +64,15 @@ class ExternalField
 private:
     FieldType type;
     std::unordered_map<std::string, double> params;
-public:
+
+    public:
     ExternalField(): type(FieldType::constField)
     {
         params["electricity"] = 1;
     }
-    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params)
-    {}
-    double getValue(const Vector& r)
+
+    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params) {}
+     double getValue(const Vector& r)
     {
         if (type == FieldType::constField) // поле направлено вдоль оси z, значение напряженности хранится по ключу electricity
         {
@@ -70,10 +80,10 @@ public:
         }
         return 0;
     }
+
 };
 
-
-double Abs(const Vector& vector) // модуль вектора
+double Abs(const Vector& _vector) // модуль вектора
 {
-    return std::sqrt(vector.Dot(vector));
+    return std::sqrt(_vector.Dot(_vector));
 }
