@@ -32,10 +32,7 @@ struct Charge
         return true;
     }
 
-    std::string tostring() const
-    {
-        return {point.tostring() + ", " + std::to_string(Q) + ", " + std::to_string(q)};
-    }
+    std::string tostring() const;
 
 };
 

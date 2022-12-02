@@ -56,10 +56,7 @@ struct Vector
         return {out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')'};
     }
 
-    std::string tostring() const
-    {
-        return {"(" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + ", " + std::to_string(data[2]) + ")"};
-    }
+    std::string tostring() const;
 };
 
 class ExternalField

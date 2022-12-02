@@ -10,6 +10,16 @@ void ParseTree(ifstream fin, LightningTree*);
 
 string TreeToString(const LightningTree&);
 
+std::string Vector::tostring() const
+{
+    return {"(" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + ", " + std::to_string(data[2]) + ")"};
+}
+
+std::string Charge::tostring() const
+{
+    return {point.tostring() + ", " + std::to_string(Q) + ", " + std::to_string(q)};
+}
+
 LightningTree GetLightningTreeFromFile(std::string filename)
 {
     ifstream fin(filename, ios_base::in);
