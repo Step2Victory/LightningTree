@@ -11,8 +11,8 @@ int main(){
     //lt.set_edge(from, to, 0.1);
     
     lt.NextIterEdges();
-    //lt.NextIterEdges();
-    //lt.NextIterEdges();
+    lt.NextIterEdges();
+    lt.NextIterEdges();
     
     WriteInFile(lt);
 

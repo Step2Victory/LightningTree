@@ -62,7 +62,7 @@ std::string TreeToString(const LightningTree& tree)
         ///outtree += "" + *elem.first ;
         for(int i = 0; i < elem.second.size(); i++)
         {
-            outtree += "" + elem.second[i]->from->tostring() + "\n" + elem.second[i]->to->tostring() + "\n" + std::to_string(elem.second[i]->sigma) + "\n";
+            outtree += "" + elem.second[i]->from->tostring() + "; " + elem.second[i]->to->tostring() + ";" + std::to_string(elem.second[i]->sigma) + "\n";
         }
     }
 
