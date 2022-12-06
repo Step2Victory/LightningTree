@@ -1,14 +1,14 @@
 #pragma once
 #include "LightningTree.h"
+#include "LTBuilder.h"
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
-using namespace std;
+void ParseTree(std::ifstream fin, LightningTree*);
 
-void ParseTree(ifstream fin, LightningTree*);
-
-string TreeToString(const LightningTree&);
+std::string TreeToString(const LightningTree&);
 
 std::string Vector::tostring() const
 {
@@ -22,12 +22,14 @@ std::string Charge::tostring() const
 
 LightningTree GetLightningTreeFromFile(std::string filename)
 {
-    ifstream fin(filename, ios_base::in);
-    LightningTree* tree = new LightningTree();
+    std::ifstream fin(filename, std::ios_base::in);
+    // LightningTree tree = new LightningTree();
+    LTBuilder ltbuilder;
     if (!fin.is_open()) // если файл не открыт
-        cout << "Файл не может быть открыт!\n"; // сообщить об этом
+        std::cout << "Файл не может быть открыт!\n"; // сообщить об этом
     else
     {
+    /// fill ltbuilder 
 
     /// char buff[50]; // буфер промежуточного хранения считываемого из файла текста
     /// fin >> buff; // считали первое слово из файла
@@ -39,24 +41,24 @@ LightningTree GetLightningTreeFromFile(std::string filename)
     */
 
     }
-    return {/*tree*/};
+    return ltbuilder.CreateLightningTree();
 }
 
 void WriteInFile(const LightningTree& tree)
 {
-    ofstream fout("LightningTree.txt", ios_base::out); 
+    std::ofstream fout(std::filesystem::current_path().parent_path() / "LightningTree.txt", std::ios_base::out); 
     fout << TreeToString(tree);
     fout.close();
 }
 
-void ParseTree(ifstream fin, LightningTree* tree)
+void ParseTree(std::ifstream fin, LightningTree* tree)
 {
     
 }
 
 std::string TreeToString(const LightningTree& tree)
 {
-    string outtree = "";
+    std::string outtree = "";
     //string outcharges;
     for(auto elem: tree.GetGraph()){
         ///outtree += "" + *elem.first ;

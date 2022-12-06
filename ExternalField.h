@@ -3,7 +3,7 @@
 #include<array>
 #include<map>
 #include<string>
-#include <iostream>
+#include<iostream>
 
 enum FieldType {constField, gaussField};
 
@@ -68,7 +68,7 @@ private:
     public:
     ExternalField(): type(FieldType::constField)
     {
-        params["electricity"] = 1;
+        params["electricity"] = 75;
     }
 
     ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params) {}
@@ -83,7 +83,7 @@ private:
 
 };
 
-double Abs(const Vector& _vector) // модуль вектора
+inline double Abs(const Vector& _vector) // модуль вектора
 {
     return std::sqrt(_vector.Dot(_vector));
 }

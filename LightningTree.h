@@ -4,52 +4,45 @@
 #include <cmath>
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <utility>
 #include "ExternalField.h"
 
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_real_distribution<> dis(0, 1.0);
-
-
-constexpr double epsilon_0 = 8.85418781762 * 1e-12;
-constexpr double pi = 3.1415926535;
-
-constexpr double kEps = 1e-9;
 
 struct Charge
 {
     Vector point;
     double q;
     double Q;
+    Charge(const Vector& point, double q, double Q) : point(point), q(q), Q(Q) {};
+    std::shared_ptr<Charge> GetMirror();
 
-    Charge GetMirror()
-    {
-        return {.point={point.data[0], point.data[1], -point.data[2]}, .q=-q, .Q=-Q};
-    }
-
-    bool operator==(const Charge& rhs) const
-    {
-        return true;
-    }
+    auto operator<=>(const Charge& rhs) const = default;
 
     std::string tostring() const;
-
 };
+
+using ChargePtr = std::shared_ptr<Charge>;
 
 struct Edge
 {
-    Charge* from;
-    Charge* to;
+    ChargePtr from;
+    ChargePtr to;
     double sigma;
+    Edge(ChargePtr from, ChargePtr to, double sigma) : from(from), to(to), sigma(sigma) {};
 };
 
+using EdgePtr = std::shared_ptr<Edge>;
+
+
+class LTBuilder;
 class LightningTree
 {
-    std::unordered_map<Charge*, std::vector<Edge*>> graph;
-    std::vector<Edge*> edges;
-    std::vector<Charge*> charges;
+    std::unordered_map<ChargePtr, std::vector<EdgePtr>> graph;
+    std::unordered_set<EdgePtr> edges;
+    std::unordered_set<ChargePtr> charges;
     
-
     uint64_t iter_number_charges;
     uint64_t iter_number_edges;
 
@@ -75,218 +68,46 @@ class LightningTree
     ExternalField phi_a;
     
 
-    double qCountPotential(const Charge& charge, const Vector& point)
-    {
-        return charge.q / (4 * pi * epsilon_0 * (Abs(charge.point - point) + r));
-    }
+    double qCountPotential(ChargePtr charge, const Vector& point);
 
-    double qCountPotential(const std::vector<Charge*>& charge, const Vector& point) // реализация формулы (4) из Leaders.pdf
-    {
-        double ans = 0;
-        for (size_t i = 0; i < charge.size(); ++i)
-        {
-            ans += qCountPotential(*charge[i], point) - qCountPotential(charge[i]->GetMirror(), point);
-        }
-        return ans;
-    }
+    double qCountPotential(const Vector& point); // реализация формулы (4) из Leaders.pdf
 
-    double QCountPotential(const Charge& charge, const Vector& point)
-    {
-        return charge.Q / (4 * pi * epsilon_0 * (Abs(charge.point - point) + R));
-    }
+    double QCountPotential(ChargePtr charge, const Vector& point);
 
-    double QCountPotential(const std::vector<Charge*>& charge, const Vector& point) // реализация формулы (5) из Leaders.pdf
-    {
-        double ans = 0;
-        for (size_t i = 0; i < charge.size(); ++i)
-        {
-            ans += QCountPotential(*charge[i], point) - QCountPotential(charge[i]->GetMirror(), point);
-        }
-        return ans;
-    }
+    double QCountPotential( const Vector& point);
 
-    double ElectricFieldAlongEdge(const Edge* edge) // реализация формулы (7) из Leaders.pdf
-    {
-        double l = Abs(edge->from->point - edge->to->point);
-        double phi_1 = qCountPotential(charges, edge->from->point) + QCountPotential(charges, edge->from->point) + phi_a.getValue(edge->from->point); // формула (6)
-        double phi_2 = qCountPotential(charges, edge->to->point) + QCountPotential(charges, edge->to->point) + phi_a.getValue(edge->to->point);
-        return -(phi_1 - phi_2) / l;
-    }
+    double ElectricFieldAlongEdge(EdgePtr edge);
 
-    double CurrentAlongEdge(const Edge* edge) // реализация формулы (8) из Leaders.pdf
-    {
-        return pi * r * r * edge->sigma * ElectricFieldAlongEdge(edge);
-    }
+    double CurrentAlongEdge(EdgePtr edge); // реализация формулы (8) из Leaders.pdf
 
-    double ElectricFieldAlongEdgeRad(const Edge* edge)
-    {
-        return 0;
-    }
+    double ElectricFieldAlongEdgeRad(EdgePtr edge);
 
-    double Heaviside(double x)
-    {
-        if (x > 0)
-        {
-            return 1;
-        }
-        return 0;
-    }
+    double Heaviside(double x);
 
-    double CurrentSheath(const Charge& charge) // реализация формулы (10) из Leaders.pdf
-    {
-        if (std::abs(charge.q) < kEps)
-        {
-            return 0;
-        }
-        if (charge.q > kEps)
-        {
-            return resistance * charge.q / std::abs(charge.q) * Heaviside((std::abs(charge.q) - q_plus_max) / r);
-        }
-        if (charge.q < kEps)
-        {
-            return resistance * charge.q / std::abs(charge.q) * Heaviside((std::abs(charge.q) - q_minus_max) / r);
-        }
-        return -1;
-    }
+    double CurrentSheath(ChargePtr charge); // реализация формулы (10) из Leaders.pdf
 
-    bool MakeEdge(Edge* edge) 
-    {
-        double probability = dis(gen);
-        double E = ElectricFieldAlongEdge(edge);
-        // реализация формулы (12) из Leaders.pdf
-        if (E > 0)
-        {
-            return (1 - std::exp(-std::pow((E / E_plus), 2.5))) > probability;
-        }
-        return (1 - std::exp(-std::pow((E / E_minus), 2.5))) > probability;
-    }
+    bool MakeEdge(EdgePtr edge); // содержит реализацию формулы (12) из Leaders.pdf
 
-    bool Find(Charge * charge, const std::vector<Edge*>& edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
-    {
-        for (auto * edge : edges)
-        {
-            if (Abs(edge->to->point - charge->point) < kEps || Abs(edge->from->point - charge->point) < kEps)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    bool Find(ChargePtr charge, const std::vector<EdgePtr>& edges); // проверяет является заряд charge концом какого-нибудь ребра из edges
 
+    ChargePtr GetChargeInPoint(Vector point); 
+
+    LightningTree(double h, double x_min, double y_min, double z_min, double x_max, double y_max, 
+    double z_max, double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
+    double E_plus, double E_minus, double eta, double beta, double sigma, ExternalField phi_a, 
+    std::unordered_map<ChargePtr, std::vector<EdgePtr>> graph, std::unordered_set<EdgePtr> edges, std::unordered_set<ChargePtr> charges); 
+    friend LTBuilder;
 public:
+    void NextIter(); // combine charges and edges count
 
-    LightningTree() = default;
-    LightningTree(double h,
-    double x_min, double y_min, double z_min, double x_max, double y_max, double z_max,
-    double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
-    double E_plus, double eta, double beta, double sigma, ExternalField phi_a)
+    void NextIterCharges(); // count new charges
 
-    : h(h), x_min(x_min), y_min(y_min), z_min(z_min), x_max(x_max), y_max(y_max), z_max(z_max), delta_t(delta_t), delta_T(delta_T),
-    r(r), R(R), q_plus_max(q_plus_max), q_minus_max(q_minus_max), resistance(resistance), E_plus(E_plus), eta(eta), beta(beta),
-    sigma(sigma), phi_a(phi_a), iter_number_charges(0), iter_number_edges(0)
-    {
-        E_minus = 2 * E_plus;
-        double x_middle = (x_min + x_max) / 2;
-        double y_middle = (y_min + y_max) / 2;
-        double z_middle = (z_min + z_max) / 2;
-        Charge * first = new Charge{.point = {x_middle, y_middle, z_middle}, .q = 0.0,.Q= 0.0};
-        Charge * second = new Charge{.point = {x_middle, y_middle, z_middle + h}, .q = 0.0,.Q= 0.0};
-        Edge * edge = new Edge{.from = first, .to = second, .sigma = sigma};
-        charges.push_back(first);
-        charges.push_back(second);
-        edges.push_back(edge);
-        graph[first].push_back(edge);
-    }
-
-    void set_edge(Charge& _from, Charge& _to, double _sigma)
-    {
-        Edge * edge = new Edge{.from = &_from, .to = &_to, .sigma = _sigma};
-        charges.push_back(&_from);
-        charges.push_back(&_to);
-        edges.push_back(edge);
-        graph[&_from].push_back(edge);
-    }
-
-    void NextIter() // combine charges and edges count
-    {
-        NextIterCharges();
-        if (delta_t * iter_number_charges > delta_T * iter_number_edges)
-        {   
-            NextIterEdges();
-        }
-    }
-
-    void NextIterCharges() // count new charges
-    {
-        std::unordered_map<Charge*, std::pair<double, double>> delta_charges;
-        for (auto elem : graph)
-        {
-            Charge* charge = elem.first;
-            std::vector<Edge*> edges = elem.second;
-            for (auto* edge: edges)
-            {
-                delta_charges[charge].first += CurrentAlongEdge(edge);
-            }
-            delta_charges[charge].first-= CurrentSheath(*charge);
-            delta_charges[charge].second = CurrentSheath(*charge);
-        }
-        for (auto elem : delta_charges)
-        {
-            elem.first->q += delta_charges[elem.first].first * delta_t;
-            elem.first->Q += delta_charges[elem.first].second * delta_t;
-        }
-        iter_number_charges++;
-    }
     
-    void NextIterEdges() // count new edges using dis
-    {
+    void NextIterEdges(); // count new edges using dis 
 
-        for (auto elem : graph)
-        {
-            Charge* charge = elem.first;
-            std::vector<Edge*> edges = elem.second;
-            for (int i = -1; i < 2; ++i)
-            {
-                for (int j = -1; j < 2; ++j)
-                {
-                    for (int k = -1; k < 2; ++k)
-                    {
-                        Charge * new_charge = new Charge{.point = charge->point + Vector{i * h, j * h, k * h}, .q = 0, .Q = 0};
-                        Edge * edge = new Edge{.from = charge, .to = new_charge, .sigma = sigma};
-                        if (!Find(new_charge, edges) && MakeEdge(edge))
-                        {
-                            edges.push_back(edge);
-                            charges.push_back(new_charge);
-                            graph[charge].push_back(edge);
-                            // graph[new_charge].push_back(new Edge{.from = new_charge, .to = charge, .sigma = sigma});
-                        }
-                        else
-                        {
-                            delete edge;
-                            delete new_charge;
-                        }
-                    }
-                }
-            }
-        }
-        iter_number_edges++;
-    }    
+    std::unordered_map<ChargePtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 
-    std::unordered_map<Charge*, std::vector<Edge*>> GetGraph() const // возвращает копию текущего состояния графа
-    {
-        return graph;
-    }
+    void Info();
 
-    ~LightningTree() // деструктор освобождает память
-    {
-        for (auto edge: edges)
-        {
-            delete edge;
-        }
-        for (auto charge: charges)
-        {
-            delete charge;
-        }   
-    }
-
+    ~LightningTree(){};
 };
