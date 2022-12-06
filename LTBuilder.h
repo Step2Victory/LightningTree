@@ -1,7 +1,9 @@
 #pragma once
 #include "LightningTree.h"
 
-
+#ifndef LTBuilder_cpp 
+    #define LTBuilder_cpp
+    
 class LTBuilder
 {
     std::unordered_map<ChargePtr, std::vector<EdgePtr>> graph;
@@ -60,3 +62,5 @@ public:
     LTBuilder& SetExternalField(const ExternalField& phi_a);
     LTBuilder& SetEdgeInTheMiddle(double q); // добавляет два заряда и ребро в центр расчетной области
 };
+
+#endif

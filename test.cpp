@@ -17,10 +17,6 @@ int main(){
     //Charge to = {{110, 110, 110}, 2e-7, 2e-14};
     //lt.set_edge(from, to, 0.1);
     
-    // lt.NextIterEdges();
-    // lt.NextIterEdges();
-    // lt.NextIterEdges();S
-    //  lt.NextIter();
     int n_iter = 2;
     for (int i = 0; i < n_iter; ++i)
     {

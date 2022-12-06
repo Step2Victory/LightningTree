@@ -9,6 +9,8 @@
 #include <utility>
 #include "ExternalField.h"
 
+#ifndef LightningTree_cpp
+    #define LightningTree_cpp
 
 struct Charge
 {
@@ -111,3 +113,5 @@ public:
 
     ~LightningTree(){};
 };
+
+#endif
