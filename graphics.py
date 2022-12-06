@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import copy
 
 
 class Vector(object):
@@ -41,8 +42,10 @@ def openTree(filename):
                 _q = float(charge.strip().rsplit(',', 2)[1])
                 _Q = float(charge.strip().rsplit(',', 2)[2])
                 _point = [float(point.strip('( )')) for point in (charge.strip().rsplit(',', 2)[0]).split(',')]
+                #print(_point, _q, _Q)
                 charges.append(Charge(Vector(_point.copy()), _q, _Q))
-            edges.append(Edge(charges.copy(), _sigma))       
+            edges.append(Edge(charges, _sigma))
+            charges.clear()
     return edges
             
 def map3d_tree(edges):
@@ -53,6 +56,7 @@ def map3d_tree(edges):
     y = []
     z = []
     q = []
+    #print(edges[1]._from)
     for edge in edges:
         x.append(edge._from.point.x)
         x.append(edge._to.point.x)
@@ -62,11 +66,12 @@ def map3d_tree(edges):
         z.append(edge._to.point.z)
         q.append(edge._from.q)
         q.append(edge._to.q)
+        # print(edge)
         ax.plot([edge._from.point.x, edge._to.point.x],
                 [edge._from.point.y, edge._to.point.y],
                 [edge._from.point.z, edge._to.point.z])
     
-    ax.scatter(x, y, z, c=2, cmap='viridis', label=q)
+    ax.scatter(x, y, z, cmap='viridis', label=q)
     plt.show()
     
 def main():
