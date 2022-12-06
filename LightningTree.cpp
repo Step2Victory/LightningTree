@@ -110,7 +110,7 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     {
         return (1 - std::exp(-std::pow((E / E_plus), 2.5))) > probability;
     }
-    return (1 - std::exp(-std::pow((E / E_minus), 2.5))) > probability;
+    return (1 - std::exp(-std::pow((-E / E_minus), 2.5))) > probability;
 }
 
 bool LightningTree::Find(ChargePtr charge, const std::vector<EdgePtr>& edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
