@@ -1,5 +1,7 @@
 #include "LTBuilder.h"
 #include "IOTree.h"
+#include "LightningTree.cpp"
+#include "LTBuilder.cpp"
 //#include <iostream>
 
 int main(){
@@ -23,22 +25,22 @@ int main(){
     for (int i = 0; i < n_iter; ++i)
     {
         lt.NextIter();
-        WriteInFile(lt);
-        // lt.Info();
+        // WriteInFile(lt);
+        lt.Info();
     }
     WriteInFile(lt);
 
-    auto graph = lt.GetGraph();
+    // auto graph = lt.GetGraph();
 
-    auto el = graph.begin()->first;
+    // auto el = graph.begin()->first;
     // std::cout << "Заряд вершины: " << el.q <<std::endl;
     // std::cout << "Заряд чехла: " << el.Q << std::endl << "Координаты вершины: ";
-    double charge_sum = 0;
-    for(auto elem: graph){
-        charge_sum += elem.first->q + elem.first->Q;
-        std::cout << elem.first->point << ' ' << elem.first->q << ' ' << elem.first->Q << ' ' << std::endl;
-    }
-    std::cout << "Charge sum: " << charge_sum << std::endl;
+    // double charge_sum = 0;
+    // for(auto elem: graph){
+    //     charge_sum += elem.first->q + elem.first->Q;
+    //     std::cout << elem.first->point << ' ' << elem.first->q << ' ' << elem.first->Q << ' ' << std::endl;
+    // }
+    // std::cout << "Charge sum: " << charge_sum << std::endl;
 
     //std::cout << "Hello World!";
 

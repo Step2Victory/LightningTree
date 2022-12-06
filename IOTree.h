@@ -46,7 +46,7 @@ LightningTree GetLightningTreeFromFile(std::string filename)
 
 void WriteInFile(const LightningTree& tree)
 {
-    std::ofstream fout(std::filesystem::current_path().parent_path() / "LightningTree.txt", std::ios_base::out); 
+    std::ofstream fout("LightningTree.txt", std::ios_base::out); 
     fout << TreeToString(tree);
     fout.close();
 }
