@@ -51,11 +51,12 @@ def openTree(filename):
 def map3d_tree(edges):
     # create 3d axes
     ax = plt.axes(projection='3d')
-    ax.set_title("3D plots lighting tree")
+    ax.set_title("3D graph lighting tree")
     x = []
     y = []
     z = []
     q = []
+    Q = []
     #print(edges[1]._from)
     for edge in edges:
         x.append(edge._from.point.x)
@@ -66,17 +67,66 @@ def map3d_tree(edges):
         z.append(edge._to.point.z)
         q.append(edge._from.q)
         q.append(edge._to.q)
-        # print(edge)
+        Q.append(edge._from.Q)
+        Q.append(edge._to.Q)
         ax.plot([edge._from.point.x, edge._to.point.x],
                 [edge._from.point.y, edge._to.point.y],
-                [edge._from.point.z, edge._to.point.z])
+                [edge._from.point.z, edge._to.point.z], color="blue", alpha=0.4)
     
-    ax.scatter(x, y, z, cmap='viridis', label=q)
+    ax.scatter(x, y, z, c=Q, cmap="plasma", alpha=0.2)
     plt.show()
+    
+def map2d_tree(edges, plane:str = "xz", var:float = 0):
+    ax = plt.axes()
+    ax.set_title("2D graph lighting tree in plane " + plane)
+    x = []
+    y = []
+    z = []
+    q = []
+    Q = []
+    for edge in edges:
+        x.append(edge._from.point.x)
+        x.append(edge._to.point.x)
+        y.append(edge._from.point.y)
+        y.append(edge._to.point.y)
+        z.append(edge._from.point.z)
+        z.append(edge._to.point.z)
+        q.append(edge._from.q)
+        q.append(edge._to.q)
+        Q.append(edge._from.Q)
+        Q.append(edge._to.Q)
+        
+        match plane:
+            case "xz" | "zx":
+                if(edge._from.point.y == var and edge._to.point.y == var):
+                    ax.plot([edge._from.point.x, edge._to.point.x], 
+                            [edge._from.point.z, edge._to.point.z], 
+                            color="blue")
+            case "yz" | "zy":
+                if(edge._from.point.y == var and edge._to.point.y == var):
+                    ax.plot([edge._from.point.y, edge._to.point.y], 
+                            [edge._from.point.z, edge._to.point.z],
+                            color="blue")
+            case "xy" | "yx":
+                if(edge._from.point.y == var and edge._to.point.y == var):
+                    ax.plot([edge._from.point.x, edge._to.point.x], 
+                            [edge._from.point.y, edge._to.point.y],
+                            color="blue")
+    
+    match plane:
+        case "xz" | "zx":
+            ax.scatter(x, z, c=Q, cmap="plasma")
+        case "yz" | "zy":
+            ax.scatter(y, z, c=Q, cmap="plasma")
+        case "xy" | "yx":
+            ax.scatter(x, y, c=Q, cmap="plasma") 
+    plt.show()
+    
     
 def main():
     edges = openTree("LightningTree.txt")
     map3d_tree(edges)
+    #map2d_tree(edges)
 
 
 if __name__ == '__main__':
