@@ -42,9 +42,7 @@ def openTree(filename):
                 _Q = float(charge.strip().rsplit(',', 2)[2])
                 _point = [float(point.strip('( )')) for point in (charge.strip().rsplit(',', 2)[0]).split(',')]
                 charges.append(Charge(Vector(_point.copy()), _q, _Q))
-            edges.append(Edge(charges.copy(), _sigma))
-        # for edge in edges:
-        #     print(edge._from.point.x)        
+            edges.append(Edge(charges.copy(), _sigma))       
     return edges
             
 def map3d_tree(edges):
@@ -62,19 +60,18 @@ def map3d_tree(edges):
         y.append(edge._to.point.y)
         z.append(edge._from.point.z)
         z.append(edge._to.point.z)
-        q.append(2)
-        q.append(2)
+        q.append(edge._from.q)
+        q.append(edge._to.q)
         ax.plot([edge._from.point.x, edge._to.point.x],
                 [edge._from.point.y, edge._to.point.y],
                 [edge._from.point.z, edge._to.point.z])
     
-    ax.scatter(x, y, z, c=q, cmap='viridis', label=q)
+    ax.scatter(x, y, z, c=2, cmap='viridis', label=q)
     plt.show()
     
 def main():
     edges = openTree("LightningTree.txt")
     map3d_tree(edges)
-    #heatmap_fi(charges, 1000, max_h(charges) + 500, 10)
 
 
 if __name__ == '__main__':

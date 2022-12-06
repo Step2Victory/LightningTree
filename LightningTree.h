@@ -18,7 +18,7 @@ struct Charge
     Charge(const Vector& point, double q, double Q) : point(point), q(q), Q(Q) {};
     std::shared_ptr<Charge> GetMirror();
 
-    auto operator<=>(const Charge& rhs) const = default;
+    // auto operator<=>(const Charge& rhs) const = default;
 
     std::string tostring() const;
 };
