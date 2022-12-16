@@ -86,7 +86,7 @@ def map3d_tree(edges):
                 [edge._from.point.y, edge._to.point.y],
                 [edge._from.point.z, edge._to.point.z], color="blue", alpha=0.4)
     
-    ax.scatter(x, y, z, c=Q, cmap="plasma", alpha=0.2)
+    ax.scatter(x, y, z, c=q, cmap="plasma", alpha=0.2)
     plt.show()
     
 def map2d_tree(edges, plane:str = "xz", var:float = 0):
@@ -128,11 +128,11 @@ def map2d_tree(edges, plane:str = "xz", var:float = 0):
     
     match plane:
         case "xz" | "zx":
-            ax.scatter(x, z, c=Q, cmap="plasma")
+            ax.scatter(x, z, c=q, cmap="plasma")
         case "yz" | "zy":
-            ax.scatter(y, z, c=Q, cmap="plasma")
+            ax.scatter(y, z, c=q, cmap="plasma")
         case "xy" | "yx":
-            ax.scatter(x, y, c=Q, cmap="plasma") 
+            ax.scatter(x, y, c=q, cmap="plasma") 
     plt.show()
     
 
@@ -231,17 +231,17 @@ def map3d_tree_plotly(edges, plane:str = "", value:int=0, Range:list=[-10, 10]):
         df_nodes = df_nodes[mask_nodes]
         
     edge_trace = go.Scatter3d(x=df_edges.x, y=df_edges.y, z=df_edges.z, 
-                            line = dict(width=3, color='blue'), hoverinfo='none', mode='lines')
+                            line = dict(width=2, color='blue'), hoverinfo='none', mode='lines')
     
     node_trace = go.Scatter3d(x=df_nodes.x, y=df_nodes.y, z=df_nodes.z, 
                             mode='markers', 
                             hoverinfo='text', 
-                            marker=dict(color=[],
-                                        showscale=True, 
-                                        colorscale='Electric',
+                            marker=dict(showscale=True, 
+                                        colorscale='plasma',
                                         size=3), 
-                                        line_width=.1)
-    node_trace.text = df_nodes.Q
+                                        line_width=.1
+                                        )
+    node_trace.text = df_nodes.q
     
     data = [edge_trace, node_trace]
     fig = go.Figure(data=data, layout=layout)
@@ -250,7 +250,7 @@ def map3d_tree_plotly(edges, plane:str = "", value:int=0, Range:list=[-10, 10]):
         dcc.Graph(figure=fig, style={'height':'100vh'})
         ])
         
-    app.run_server(mode='inline')
+    app.run_server(mode='inline') # inline - внутри jupyter; external - в браузере
     
     
 def main():
