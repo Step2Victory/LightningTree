@@ -31,6 +31,18 @@ LTBuilder& LTBuilder::SetEdge(std::shared_ptr<Charge> from, std::shared_ptr<Char
     return *this;
 }
 
+LTBuilder& LTBuilder::SetEPlus(double E_plus_)
+{
+    E_plus = E_plus_;
+    return *this;
+
+}
+LTBuilder& LTBuilder::SetEMinus(double E_minus_)
+{
+    E_minus = E_minus_;
+    return *this;
+}
+
 LTBuilder& LTBuilder::SetXLimits(double x_min_, double x_max_)
 {
     x_min = x_min_;

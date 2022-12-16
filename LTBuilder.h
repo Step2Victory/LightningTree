@@ -22,7 +22,7 @@ class LTBuilder
     double z_max = 9000;
     double delta_t = 0.001;
     double delta_T = 0.001;
-    double r = 1;
+    double r = 0.01;
     double R = 50;
     double q_plus_max = 0.005;
     double q_minus_max = 0.01;
@@ -31,7 +31,7 @@ class LTBuilder
     double E_minus = 100;
     double eta = 0;
     double beta = 0;
-    double sigma = 100;
+    double sigma = 1;
     ExternalField phi_a;
 
 public:
@@ -41,6 +41,9 @@ public:
     LTBuilder& SetCharge(std::shared_ptr<Charge> charge);
     LTBuilder& SetEdge(std::shared_ptr<Edge> edge);
     LTBuilder& SetEdge(std::shared_ptr<Charge> from, std::shared_ptr<Charge> to);
+
+    LTBuilder& SetEPlus(double E_plus);
+    LTBuilder& SetEMinus(double E_minus);
 
     LTBuilder& SetXLimits(double x_min, double x_max);
     LTBuilder& SetYLimits(double y_min, double y_max);

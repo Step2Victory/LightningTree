@@ -3,7 +3,7 @@
 
 std::random_device rd;
 std::mt19937 gen(rd());
-std::uniform_real_distribution<> dis;
+std::uniform_real_distribution<> dis(0.5, 1);
 
 constexpr double epsilon_0 = 8.85418781762 * 1e-12;
 constexpr double pi = 3.1415926535;
@@ -25,6 +25,10 @@ ChargePtr Charge::GetMirror()
 /////////////////
 double LightningTree::qCountPotential(ChargePtr charge, const Vector& point)
 {
+    if (Abs(charge->point - point) < kEps)
+    {
+        return 0;
+    }
     return charge->q / (4 * pi * epsilon_0 * (Abs(charge->point - point) + r));
 }
 
@@ -40,6 +44,10 @@ double LightningTree::qCountPotential(const Vector& point) // реализаци
 
 double LightningTree::QCountPotential(ChargePtr charge, const Vector& point)
 {
+    if (Abs(charge->point - point) < kEps)
+    {
+        return 0;
+    }
     return charge->Q / (4 * pi * epsilon_0 * (Abs(charge->point - point) + R));
 }
 
@@ -104,13 +112,32 @@ bool LightningTree::MakeEdge(EdgePtr edge)
 {
     double probability = dis(gen);
     double E = ElectricFieldAlongEdge(edge);
-    // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    
     // реализация формулы (12) из Leaders.pdf
-    if (E > 0)
+    if (E > E_plus)
     {
-        return (1 - std::exp(-std::pow((E / E_plus), 2.5))) > probability;
+        // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 1))) > probability;
     }
-    return (1 - std::exp(-std::pow((-E / E_minus), 2.5))) > probability;
+    else if (-E > E_minus)
+    {
+        // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 1))) > probability;
+    }
+    
+    return false;
+    
+
+    
+
+    // std::cout << E << ' ' << (1 - std::exp(-std::pow((-E / E_minus), 2.5))) << std::endl;
+    // if (E > 0)
+    // {
+    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    //     return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 2.5))) > probability;
+    // }
+    // // std::cout << E << ' ' << (1 - std::exp(-std::pow((-E / E_minus), 2.5))) << std::endl;
+    // return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 2.5))) > probability;
 }
 
 bool LightningTree::Find(ChargePtr charge, const std::vector<EdgePtr>& edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
