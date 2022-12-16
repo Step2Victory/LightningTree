@@ -126,9 +126,6 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     }
     
     return false;
-    
-
-    
 
     // std::cout << E << ' ' << (1 - std::exp(-std::pow((-E / E_minus), 2.5))) << std::endl;
     // if (E > 0)

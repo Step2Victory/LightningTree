@@ -15,7 +15,7 @@ void PrintCurrentState(const LightningTree& lt)
 }
 
 int main(){
-    std::unordered_map<std::string, double> params = {{"electricity", 200000}};
+    std::unordered_map<std::string, double> params = {{"electricity", 100000}};
     ExternalField ef(FieldType::constField, params);
     LightningTree lt =  LTBuilder()
                             .SetResistance(0)
