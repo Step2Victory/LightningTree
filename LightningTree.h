@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <memory>
 #include <utility>
+#include <optional>
 #include "ExternalField.h"
 
 #ifndef LightningTree_cpp
@@ -18,8 +19,7 @@ struct Charge
     double q;
     double Q;
     Charge(const Vector& point, double q, double Q) : point(point), q(q), Q(Q) {};
-    std::shared_ptr<Charge> GetMirror();
-
+    std::shared_ptr<Charge> GetMirror(); 
     // auto operator<=>(const Charge& rhs) const = default;
 
     std::string tostring() const;
@@ -37,6 +37,7 @@ struct Edge
 
 using EdgePtr = std::shared_ptr<Edge>;
 
+constexpr int kNumberOfIters = 2;
 
 class LTBuilder;
 class LightningTree
@@ -45,6 +46,8 @@ class LightningTree
     std::unordered_set<EdgePtr> edges;
     std::unordered_set<ChargePtr> charges;
     
+    std::array<std::vector<std::shared_ptr<Charge>>, kNumberOfIters> peripheral;
+
     uint64_t iter_number_charges;
     uint64_t iter_number_edges;
 
@@ -90,9 +93,18 @@ class LightningTree
 
     bool MakeEdge(EdgePtr edge); // содержит реализацию формулы (12) из Leaders.pdf
 
-    bool Find(ChargePtr charge, const std::vector<EdgePtr>& edges); // проверяет является заряд charge концом какого-нибудь ребра из edges
+    void DeleteCharge(ChargePtr charge); // удаляет заряд и все его ребра из дерева
 
-    ChargePtr GetChargeInPoint(Vector point); 
+    void DeleteFromPerephery(ChargePtr charge); // удаляет заряд из списка переферийных, если он найден
+    
+
+    std::optional<ChargePtr> FindChargeInPoint(const Vector& point); // возаращает заряд в точке point, если такого нет, возвращает nullopt
+
+    bool FindInTree(const Vector& point); // проверяет является ли заряд в точке point концом какого-нибудь ребра дерева
+
+    bool FindInGivenEdges(const Vector& point, const std::vector<EdgePtr>& edges); // проверяет является заряд в точке концом какого-нибудь ребра из edges
+
+    ChargePtr CreateChargeInPoint(const Vector& point); // создает заряд в точке
 
     LightningTree(double h, double x_min, double y_min, double z_min, double x_max, double y_max, 
     double z_max, double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
@@ -104,6 +116,9 @@ public:
 
     void NextIterCharges(); // count new charges
 
+
+    void DeletePeripheral(); // delete peripherical edges
+    
     void NextIterEdges(); // count new edges using dis 
 
     // void LightningTree::DelEdges(); // delete edges that don't create new ones

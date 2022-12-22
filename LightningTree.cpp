@@ -137,11 +137,68 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     // return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 2.5))) > probability;
 }
 
-bool LightningTree::Find(ChargePtr charge, const std::vector<EdgePtr>& edges) // проверяет является заряд charge концом какого-нибудь ребра из edges
+void LightningTree::DeleteCharge(ChargePtr charge) // удаляет заряд и все его ребра из дерева
+{
+    if (graph.contains(charge))
+    {
+        for (auto edge: graph[charge])
+        {
+            if (edge->from == charge)
+            {
+                auto iter_in_to = std::find(graph[edge->to].begin(), graph[edge->to].end(), edge);
+                if (iter_in_to != graph[edge->to].end())
+                    graph[edge->to].erase(iter_in_to);
+            
+                
+                if (graph[edge->to].size() == 1)
+                {
+                    peripheral[0].push_back(edge->to);
+                }
+            }
+            else
+            {
+                auto iter_in_from = std::find(graph[edge->from].begin(), graph[edge->from].end(), edge);
+                graph[edge->from].erase(iter_in_from);
+                if (graph[edge->from].size() == 1)
+                {
+                    peripheral[0].push_back(edge->from);
+                }
+            }
+            edges.erase(edge);
+        }
+        graph.erase(charge);
+    }
+}
+
+void LightningTree::DeleteFromPerephery(ChargePtr charge)
+{
+    for (size_t i = 0; i < kNumberOfIters; ++i)
+    {
+        if (auto charge_iter = std::find(peripheral[i].begin(), peripheral[i].end(), charge); charge_iter != peripheral[i].end())
+        {
+            peripheral[i].erase(charge_iter);
+            return;
+        }
+    }
+}
+
+std::optional<ChargePtr> LightningTree::FindChargeInPoint(const Vector& point) // возвращает заряд в точке point, если такого нет, возвращает nullopt
+{
+    for (auto charge: charges)
+    {
+        if (Abs(charge->point - point) < kEps)
+        {
+            return charge;
+        }
+    }
+    return std::nullopt;
+}
+
+bool LightningTree::FindInTree(const Vector& point)
 {
     for (auto edge : edges)
     {
-        if (Abs(edge->to->point - charge->point) < kEps || Abs(edge->from->point - charge->point) < kEps)
+        if (Abs(edge->to->point - point) < kEps || Abs(edge->from->point - point) < kEps)
         {
             return true;
         }
@@ -149,7 +206,19 @@ bool LightningTree::Find(ChargePtr charge, const std::vector<EdgePtr>& edges) //
     return false;
 }
 
-ChargePtr LightningTree::GetChargeInPoint(Vector point)
+bool LightningTree::FindInGivenEdges(const Vector& point, const std::vector<EdgePtr>& edges) // проверяет является заряд в точке point концом какого-нибудь ребра из edges
+{
+    for (auto edge : edges)
+    {
+        if (Abs(edge->to->point - point) < kEps || Abs(edge->from->point - point) < kEps)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+ChargePtr LightningTree::CreateChargeInPoint(const Vector& point) // создает заряж в точке point
 {
     for (auto charge: charges)
     {
@@ -180,6 +249,7 @@ void LightningTree::NextIter() // combine charges and edges count
     if (delta_t * iter_number_charges > delta_T * iter_number_edges)
     {   
         NextIterEdges();
+        DeletePeripheral();
     }
 }
 
@@ -211,6 +281,20 @@ void LightningTree::NextIterCharges() // count new charges
     }
     iter_number_charges++;
 }
+
+void LightningTree::DeletePeripheral() // delete peripherical edges
+{
+    for (auto charge: peripheral[kNumberOfIters - 1])
+    {
+        DeleteCharge(charge);
+    }
+    for (int i = kNumberOfIters - 1; i > 0; --i)
+    {
+        std::swap(peripheral[i], peripheral[i - 1]);
+    }
+    peripheral[0] = std::vector<ChargePtr>();
+}
+    
     
 void LightningTree::NextIterEdges() // count new edges using dis
 {
@@ -225,16 +309,29 @@ void LightningTree::NextIterEdges() // count new edges using dis
             {
                 for (int k = -1; k < 2; ++k)
                 {
-                    ChargePtr new_charge = GetChargeInPoint(charge->point + Vector{i * h, j * h, k * h});
- 
-                    EdgePtr edge = std::make_shared<Edge>(charge, new_charge, sigma);
-                    
-                    if (new_charge && !Find(new_charge, edges_in_current_elem) && MakeEdge(edge))
+                    bool find_in_point = false;
+                    Vector point = charge->point + Vector{i * h, j * h, k * h};
+                    if (FindInTree(point))
+                    {
+                        continue;
+                    }
+                    ChargePtr new_charge = CreateChargeInPoint(point);
+                    if (auto charge_in_point = FindChargeInPoint(point); charge_in_point.has_value())
+                    {
+                        find_in_point = true;
+                        new_charge = *charge_in_point;
+                    }
+                    if (EdgePtr edge = std::make_shared<Edge>(charge, new_charge, sigma); MakeEdge(edge))
                     {
                         edges.insert(edge);
                         graph[charge].push_back(edge);
-                        charges.insert(new_charge);
+                        if (!find_in_point)
+                        {
+                            charges.insert(new_charge);
+                        }
+                        DeleteFromPerephery(charge);
                         new_graph[new_charge].push_back(edge);
+                        peripheral[0].push_back(new_charge);
                     }
                 }
             }
