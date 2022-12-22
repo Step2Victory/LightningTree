@@ -1,6 +1,8 @@
 #include "LTBuilder.h"
 #include "IOTree.h"
 //#include <iostream>
+#include "LightningTree.cpp"
+#include "LTBuilder.cpp"
 
 
 void PrintCurrentState(const LightningTree& lt)

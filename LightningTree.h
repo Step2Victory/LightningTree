@@ -116,9 +116,12 @@ public:
 
     void NextIterCharges(); // count new charges
 
+
     void DeletePeripheral(); // delete peripherical edges
     
     void NextIterEdges(); // count new edges using dis 
+
+    // void LightningTree::DelEdges(); // delete edges that don't create new ones
 
     std::unordered_map<ChargePtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 

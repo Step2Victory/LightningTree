@@ -126,9 +126,6 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     }
     
     return false;
-    
-
-    
 
     // std::cout << E << ' ' << (1 - std::exp(-std::pow((-E / E_minus), 2.5))) << std::endl;
     // if (E > 0)
@@ -342,7 +339,33 @@ void LightningTree::NextIterEdges() // count new edges using dis
     }
     graph.insert(new_graph.begin(), new_graph.end());
     iter_number_edges++;
-}    
+}
+
+/// нужны флаги свобоного заряда (если заряд имеет одно ребро)
+// void LightningTree::DelEdges() // delete edges that don't create new ones 
+// {
+//     std::unordered_map<ChargePtr, std::vector<EdgePtr>> new_graph;
+//     for (auto elem : graph)
+//     {
+//         ChargePtr charge = elem.first;
+//         std::vector<EdgePtr> edges_in_current_elem = elem.second;
+          
+//         //ChargePtr new_charge = GetChargeInPoint(charge->point + Vector{i * h, j * h, k * h});
+
+//         //EdgePtr edge = std::make_shared<Edge>(charge, new_charge, sigma);
+        
+//         if (!Find(charge, edges_in_current_elem) && MakeEdge(edge))
+//         {
+//             edges.insert(edge);
+//             graph[charge].push_back(edge);
+//             charges.insert(new_charge);
+//             new_graph[new_charge].push_back(edge);
+//         }
+        
+//     }
+//     graph.insert(new_graph.begin(), new_graph.end());
+//     iter_number_edges++;
+// } 
 
 // Graph getter
 ////////////////////////////////////////////
@@ -361,4 +384,3 @@ void LightningTree::Info()
     std::cout << "Edges count: " << edges.size() << '\n';
     std::cout << std::endl;
 }
-
