@@ -27,9 +27,9 @@ double LightningTree::qCountPotential(ChargePtr charge, const Vector& point)
 {
     if (Abs(charge->point - point) < kEps)
     {
-        return 0;
+        return charge->q / (4 * pi * epsilon_0 * (h/2));
     }
-    return charge->q / (4 * pi * epsilon_0 * (Abs(charge->point - point) + r));
+    return charge->q / (4 * pi * epsilon_0 * (Abs(charge->point - point)));
 }
 
 double LightningTree::qCountPotential(const Vector& point) // реализация формулы (4) из Leaders.pdf
@@ -44,10 +44,10 @@ double LightningTree::qCountPotential(const Vector& point) // реализаци
 
 double LightningTree::QCountPotential(ChargePtr charge, const Vector& point)
 {
-    if (Abs(charge->point - point) < kEps)
-    {
-        return 0;
-    }
+    // if (Abs(charge->point - point) < kEps)
+    // {
+    //     return 0;
+    // }
     return charge->Q / (4 * pi * epsilon_0 * (Abs(charge->point - point) + R));
 }
 

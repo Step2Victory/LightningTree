@@ -1,8 +1,8 @@
 #include "LTBuilder.h"
 #include "IOTree.h"
 //#include <iostream>
-#include "LightningTree.cpp"
-#include "LTBuilder.cpp"
+// #include "LightningTree.cpp"
+// #include "LTBuilder.cpp"
 
 
 void PrintCurrentState(const LightningTree& lt)
@@ -17,28 +17,28 @@ void PrintCurrentState(const LightningTree& lt)
 }
 
 int main(){
-    std::unordered_map<std::string, double> params = {{"electricity", 200000}};
+    std::unordered_map<std::string, double> params = {{"electricity", 243000}};
     ExternalField ef(FieldType::constField, params);
     LightningTree lt =  LTBuilder()
-                            .SetResistance(0)
+                            .SetResistance(1)
                             .SetExternalField(ef)
-                            .SetEdgeInTheMiddle(0)
-                            .SetEPlus(100000)
-                            .SetEMinus(200000)
+                            .SetEPlus(200000)
+                            .SetEMinus(100000)
                             .SetDeltaT(0.00001)
                             .SetDeltat(0.00001)
-                            .SetSigma(4.8)
+                            .SetSigma(10)
                             .SetH(100)
                             .Setr(0.01)
+                            .SetEdgeInTheMiddle(0)
                             .CreateLightningTree();
     
-    int n_iter = 100;
+    int n_iter = 200;
     for (int i = 0; i < n_iter; ++i)
     {
         lt.NextIter();
         WriteInFile(lt);
         lt.Info();
-        PrintCurrentState(lt);
+        // PrintCurrentState(lt);
         std::cout << std::endl;
     }
     WriteInFile(lt);
