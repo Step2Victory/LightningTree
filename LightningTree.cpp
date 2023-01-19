@@ -303,11 +303,27 @@ void LightningTree::NextIterEdges() // count new edges using dis
     {
         ChargePtr charge = elem.first;
         std::vector<EdgePtr> edges_in_current_elem = elem.second;
+        int first, last;
+        if (charge->type == both)
+        {
+            first = -1;
+            last = 2;
+        }
+        else if (charge->type == positive)
+        {
+            first = 0;
+            last = 2;
+        }
+        else
+        {
+            first = -1;
+            last = 1;
+        }
         for (int i = -1; i < 2; ++i)
         {
             for (int j = -1; j < 2; ++j)
             {
-                for (int k = -1; k < 2; ++k)
+                for (int k = first; k < last; ++k)
                 {
                     bool find_in_point = false;
                     Vector point = charge->point + Vector{i * h, j * h, k * h};
@@ -332,6 +348,18 @@ void LightningTree::NextIterEdges() // count new edges using dis
                         DeleteFromPerephery(charge);
                         new_graph[new_charge].push_back(edge);
                         peripheral[0].push_back(new_charge);
+                        if (k == 0)
+                        {
+                            new_charge->type = both;
+                        }
+                        else if (k == 1)
+                        {
+                            new_charge->type = positive;
+                        }
+                        else
+                        {
+                            new_charge->type = negative;
+                        }
                     }
                 }
             }
