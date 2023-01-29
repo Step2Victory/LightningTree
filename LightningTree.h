@@ -13,12 +13,16 @@
 #ifndef LightningTree_cpp
     #define LightningTree_cpp
 
+enum ChargeType {positive, negative, both};
+
 struct Charge
 {
     Vector point;
     double q;
     double Q;
-    Charge(const Vector& point, double q, double Q) : point(point), q(q), Q(Q) {};
+    ChargeType type;
+
+    Charge(const Vector& point, double q, double Q, ChargeType type = both) : point(point), q(q), Q(Q), type(type) {};
     std::shared_ptr<Charge> GetMirror(); 
     // auto operator<=>(const Charge& rhs) const = default;
 
