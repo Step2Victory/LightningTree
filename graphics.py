@@ -1,7 +1,8 @@
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 
+from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
 from dash import dcc, html
 from dash.dependencies import Output, Input
@@ -159,112 +160,58 @@ def slice_selection(df_edges, df_nodes, place, value, Range):
         print("Не введена плоскость!")
         
     return df_edges, df_nodes
-    
-# def map3d_tree(edges):
-#     # create 3d axes
-#     ax = plt.axes(projection='3d')
-#     ax.set_title("3D graph lighting tree")
-#     x = []
-#     y = []
-#     z = []
-#     q = []
-#     Q = []
-#     # print(edges[1]._from)
-#     for edge in edges:
-#         # x, y, z = edge._from.point // нужен iter и next
-#         # x, y, z = edge._to.point
-#         x.append(edge._from.point.x)
-#         x.append(edge._to.point.x)
-#         y.append(edge._from.point.y)
-#         y.append(edge._to.point.y)
-#         z.append(edge._from.point.z)
-#         z.append(edge._to.point.z)
-#         q.append(edge._from.q)
-#         q.append(edge._to.q)
-#         Q.append(edge._from.Q)
-#         Q.append(edge._to.Q)
-#         ax.plot([edge._from.point.x, edge._to.point.x],
-#                 [edge._from.point.y, edge._to.point.y],
-#                 [edge._from.point.z, edge._to.point.z], color="blue", alpha=0.4)
 
-#     ax.scatter(x, y, z, c=Q, cmap="plasma", alpha=0.2)
-#     plt.show()
-
-# def map2d_tree(edges, plane: str = "xz", var: float = 0):
-#     ax = plt.axes()
-#     ax.set_title("2D graph lighting tree in plane " + plane)
-#     x = []
-#     y = []
-#     z = []
-#     q = []
-#     Q = []
-#     for edge in edges:
-#         x.append(edge._from.point.x)
-#         x.append(edge._to.point.x)
-#         y.append(edge._from.point.y)
-#         y.append(edge._to.point.y)
-#         z.append(edge._from.point.z)
-#         z.append(edge._to.point.z)
-#         q.append(edge._from.q)
-#         q.append(edge._to.q)
-#         Q.append(edge._from.Q)
-#         Q.append(edge._to.Q)
-
-#         match plane:
-#             case "xz" | "zx":
-#                 if (edge._from.point.y == var and edge._to.point.y == var):
-#                     ax.plot([edge._from.point.x, edge._to.point.x],
-#                             [edge._from.point.z, edge._to.point.z],
-#                             color="blue")
-#             case "yz" | "zy":
-#                 if (edge._from.point.y == var and edge._to.point.y == var):
-#                     ax.plot([edge._from.point.y, edge._to.point.y],
-#                             [edge._from.point.z, edge._to.point.z],
-#                             color="blue")
-#             case "xy" | "yx":
-#                 if (edge._from.point.y == var and edge._to.point.y == var):
-#                     ax.plot([edge._from.point.x, edge._to.point.x],
-#                             [edge._from.point.y, edge._to.point.y],
-#                             color="blue")
-
-#     match plane:
-#         case "xz" | "zx":
-#             ax.scatter(x, z, c=Q, cmap="plasma")
-#         case "yz" | "zy":
-#             ax.scatter(y, z, c=Q, cmap="plasma")
-#         case "xy" | "yx":
-#             ax.scatter(x, y, c=Q, cmap="plasma")
-#     plt.show()
-
+def sum_distribution(df_nodes):
+    data_z = []
+    temp = []
+    data_sum_q = []
+    data_sum_Q = []
+    for z in df_nodes.z:
+        data_z.append(z)
+        temp = df_nodes.loc[df_nodes['z'] == z, ['q', 'Q']].sum()
+        data_sum_q.append(temp[0])
+        data_sum_Q.append(temp[1])
+        
+    df = pd.DataFrame({"z": data_z, "sum_q": data_sum_q, "sum_Q": data_sum_Q})                    
+    return df
 
 def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-10, 10], mode:str='external', interval:float=5):
-    app = JupyterDash('SimpleExemple')
     place = place.upper()
+    distr_charges = []
     scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
     scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
     setting = {'showbackground': False, 'showticklabels': False, 'showgrid': False, 'zeroline': False}
+    setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False}
     layout = go.Layout(showlegend=False, hovermode='closest',
-                       scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting}
+                       scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting_z}
                        )
     
-    app.layout = html.Div([html.H1("Граф дерева молнии", 
-                                   style={'textAlign': 'center', 'color': 'gold'}),
-                           dcc.Graph(id='live-update-graph',
-                                     style={'height': '100vh'}),
+    app = JupyterDash('SimpleExemple')
+    app.layout = html.Div([html.Div([html.H1("Граф дерева молнии",
+                                             style={'textAlign': 'center', 'color': 'gold'}),
+                                     dcc.Graph(id='graph_tree',
+                                               style={'height': '100vh'})
+                                     ]),
+                           html.Div([html.H4("Сумма распределения зарядов"),
+                                     dcc.Graph(id='graph_distrib')
+                                     ]),
                            dcc.Interval(id='interval-component',
                                         interval=interval*1000,
                                         n_intervals=0)
                            ])
     
-    @app.callback(Output('live-update-graph', 'figure'),
+    @app.callback(Output('graph_tree', 'figure'),
+                  Output('graph_distrib', 'figure'),
                   Input('interval-component', 'n_intervals'))
     def update_graph_live(n):
         edges = openTree(filename)
         # Разбор файла
         df_edges, df_nodes = parseTreeToDF(edges)
-        # Выделение среза среза, если задана плоскость
+        # Выделение среза, если задана плоскость
         df_edges, df_nodes = slice_selection(df_edges, df_nodes, place, value, Range)
-                        
+        # Сумма распределения зарядов в точке и чехле
+        distr_charges.append(sum_distribution(df_nodes))
+        
         # Построение рёбер
         edge_trace = go.Scatter3d(x=df_edges.x, y=df_edges.y, z=df_edges.z,
                                 line=dict(width=2, color=df_edges.color, colorscale=["darkslateblue", "crimson"], cmin=-1, cmax=1), 
@@ -277,7 +224,7 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
                                 mode='markers',
                                 marker=dict(showscale=True,
                                             colorscale=scale_nodes,
-                                            color=df_nodes.Q,
+                                            color=df_nodes.q,
                                             cmin=-0.01,
                                             cmax=0.01,
                                             size=2.4,
@@ -293,19 +240,24 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
                                 hovertemplate='q= %{customdata} <br>Q= %{text}<extra></extra>',
                                 marker=dict(showscale=False,
                                             colorscale=scale_case,
-                                            color=df_nodes.q,
+                                            color=df_nodes.Q,
                                             cmin=-0.0001,
                                             cmax=0.0001,
                                             size=24
                                             ),
                                 line_width=1,
                                 opacity=0.1
-                                )
+                                )       
         
         data = [edge_trace, node_trace, case_trace]
-        fig = go.Figure(data=data, layout=layout)   
-             
-        return fig
+        data2 = [go.Scatter(x=distr_charges[-1].sum_q, y=distr_charges[-1].z, mode='markers', name='Сумма q'),
+                go.Scatter(x=distr_charges[-1].sum_Q, y=distr_charges[-1].z, mode='markers', name='Сумма Q')]
+
+        fig = go.Figure(data=data, layout=layout)
+        fig2 = go.Figure(data=data2)
+        
+        return fig, fig2
+                                             
 
     app.run_server(mode=mode)  # inline - внутри jupyter; external - в браузере
 
