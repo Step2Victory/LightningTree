@@ -1,8 +1,6 @@
 import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
 
-from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
 from dash import dcc, html
 from dash.dependencies import Output, Input
@@ -172,8 +170,9 @@ def sum_distribution(df_nodes):
         data_sum_q.append(temp[0])
         data_sum_Q.append(temp[1])
         
+        
     df = pd.DataFrame({"z": data_z, "sum_q": data_sum_q, "sum_Q": data_sum_Q})                    
-    return df
+    return df.sort_values('z')
 
 def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-10, 10], mode:str='external', interval:float=5):
     place = place.upper()
@@ -187,14 +186,15 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
                        )
     
     app = JupyterDash('SimpleExemple')
-    app.layout = html.Div([html.Div([html.H1("Граф дерева молнии",
+    app.layout = html.Div([html.Div([html.H4("Сумма распределения зарядов"),
+                                     dcc.Graph(id='graph_distrib',
+                                               style={'height': '90vh'})
+                                     ], style={'display': 'inline-block', 'width': '20%'}),
+                           html.Div([html.H1("Граф дерева молнии",
                                              style={'textAlign': 'center', 'color': 'gold'}),
                                      dcc.Graph(id='graph_tree',
-                                               style={'height': '100vh'})
-                                     ]),
-                           html.Div([html.H4("Сумма распределения зарядов"),
-                                     dcc.Graph(id='graph_distrib')
-                                     ]),
+                                               style={'height': '90vh'})
+                                     ], style={'display': 'inline-block', 'width': '80%'}),
                            dcc.Interval(id='interval-component',
                                         interval=interval*1000,
                                         n_intervals=0)
@@ -248,10 +248,10 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
                                 line_width=1,
                                 opacity=0.1
                                 )       
-        
+        # print(tuple(distr_charges[-1].sum_q))
         data = [edge_trace, node_trace, case_trace]
-        data2 = [go.Scatter(x=distr_charges[-1].sum_q, y=distr_charges[-1].z, mode='markers', name='Сумма q'),
-                go.Scatter(x=distr_charges[-1].sum_Q, y=distr_charges[-1].z, mode='markers', name='Сумма Q')]
+        data2 = [go.Scatter(x=distr_charges[-1].sum_q, y=distr_charges[-1].z, mode='lines+markers', name='Сумма q'),
+                go.Scatter(x=distr_charges[-1].sum_Q, y=distr_charges[-1].z, mode='lines+markers', name='Сумма Q')]
 
         fig = go.Figure(data=data, layout=layout)
         fig2 = go.Figure(data=data2)
