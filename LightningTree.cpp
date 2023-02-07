@@ -37,18 +37,18 @@ double LightningTree::qCountPotential(const Vector& point) // реализаци
     double ans = 0;
     for (auto charge: charges)
     {
-        ans += qCountPotential(charge, point) - qCountPotential(charge->GetMirror(), point);
+        ans += qCountPotential(charge, point) + qCountPotential(charge->GetMirror(), point);
     }
     return ans;
 }
 
 double LightningTree::QCountPotential(ChargePtr charge, const Vector& point)
 {
-    // if (Abs(charge->point - point) < kEps)
-    // {
-    //     return 0;
-    // }
-    return charge->Q / (4 * pi * epsilon_0 * (Abs(charge->point - point) + R));
+    if (Abs(charge->point - point) < kEps)
+    {
+        return charge->Q / (4 * pi * epsilon_0 * (R/2));
+    }
+    return charge->Q / (4 * pi * epsilon_0 * (Abs(charge->point - point)));
 }
 
 double LightningTree::QCountPotential(const Vector& point) // реализация формулы (5) из Leaders.pdf
@@ -56,7 +56,7 @@ double LightningTree::QCountPotential(const Vector& point) // реализаци
     double ans = 0;
     for (auto charge: charges)
     {
-        ans += QCountPotential(charge, point) - QCountPotential(charge->GetMirror(), point);
+        ans += QCountPotential(charge, point) + QCountPotential(charge->GetMirror(), point);
     }
     return ans;
 }
@@ -68,7 +68,7 @@ double LightningTree::ElectricFieldAlongEdge(EdgePtr edge) // реализаци
     double l = Abs(edge->from->point - edge->to->point);
     double phi_1 = qCountPotential(edge->from->point) + QCountPotential(edge->from->point) + phi_a.getValue(edge->from->point); // формула (6)
     double phi_2 = qCountPotential(edge->to->point) + QCountPotential(edge->to->point) + phi_a.getValue(edge->to->point);
-    return -(phi_1 - phi_2) / l;
+    return (phi_1 - phi_2) / l;
 }
 
 double LightningTree::CurrentAlongEdge(EdgePtr edge) // реализация формулы (8) из Leaders.pdf
@@ -92,19 +92,29 @@ double LightningTree::Heaviside(double x)
 
 double LightningTree::CurrentSheath(ChargePtr charge) // реализация формулы (10) из Leaders.pdf
 {
-    if (std::abs(charge->q) <= kEps)
+    // if (std::abs(charge->q) <= kEps)
+    // {
+    //     return 0;
+    // }
+    if (charge->q > q_plus_max)
     {
-        return 0;
+        return (std::abs(charge->q) - q_plus_max) / delta_t;
     }
-    if (charge->q > kEps)
+    if (-charge->q > q_minus_max)
     {
-        return resistance * charge->q / std::abs(charge->q) * Heaviside((std::abs(charge->q) - q_plus_max) / r);
+        return -(std::abs(charge->q) - q_minus_max) / delta_t;
     }
-    if (charge->q < kEps)
-    {
-        return resistance * charge->q / std::abs(charge->q) * Heaviside((std::abs(charge->q) - q_minus_max) / r);
-    }
-    return -1;
+    return 0;
+
+    // if (charge->q > kEps)
+    // {
+    //     return resistance * charge->q / std::abs(charge->q) * Heaviside((std::abs(charge->q) - q_plus_max) / r);
+    // }
+    // if (charge->q < kEps)
+    // {
+    //     return resistance * charge->q / std::abs(charge->q) * Heaviside((std::abs(charge->q) - q_minus_max) / r);
+    // }
+    // return 0;
 }
 // Helper functions for making new edge
 //////////////////////////////////
@@ -271,8 +281,8 @@ void LightningTree::NextIterCharges() // count new charges
                 delta_charges[charge].first -= CurrentAlongEdge(edge);
             }
         }
-        delta_charges[charge].first-= CurrentSheath(charge);
-        delta_charges[charge].second = CurrentSheath(charge);
+        delta_charges[charge].first -= CurrentSheath(charge);
+        delta_charges[charge].second += CurrentSheath(charge);
     }
     for (auto elem : delta_charges)
     {
@@ -303,28 +313,13 @@ void LightningTree::NextIterEdges() // count new edges using dis
     {
         ChargePtr charge = elem.first;
         std::vector<EdgePtr> edges_in_current_elem = elem.second;
-        int first, last;
-        if (charge->type == both)
-        {
-            first = -1;
-            last = 2;
-        }
-        else if (charge->type == positive)
-        {
-            first = 0;
-            last = 2;
-        }
-        else
-        {
-            first = -1;
-            last = 1;
-        }
         for (int i = -1; i < 2; ++i)
         {
             for (int j = -1; j < 2; ++j)
             {
-                for (int k = first; k < last; ++k)
+                for (int k = -1; k < 2; ++k)
                 {
+                    
                     bool find_in_point = false;
                     Vector point = charge->point + Vector{i * h, j * h, k * h};
                     if (FindInTree(point))
@@ -337,7 +332,9 @@ void LightningTree::NextIterEdges() // count new edges using dis
                         find_in_point = true;
                         new_charge = *charge_in_point;
                     }
-                    if (EdgePtr edge = std::make_shared<Edge>(charge, new_charge, sigma); MakeEdge(edge))
+                    if (EdgePtr edge = std::make_shared<Edge>(charge, new_charge, sigma); MakeEdge(edge) 
+                    && 
+                    ((ElectricFieldAlongEdge(edge) > 0 && charge->type == positive) || (ElectricFieldAlongEdge(edge) < 0 && charge->type == negative)))
                     {
                         edges.insert(edge);
                         graph[charge].push_back(edge);
@@ -347,19 +344,8 @@ void LightningTree::NextIterEdges() // count new edges using dis
                         }
                         DeleteFromPerephery(charge);
                         new_graph[new_charge].push_back(edge);
-                        peripheral[0].push_back(new_charge);
-                        if (k == 0)
-                        {
-                            new_charge->type = both;
-                        }
-                        else if (k == 1)
-                        {
-                            new_charge->type = positive;
-                        }
-                        else
-                        {
-                            new_charge->type = negative;
-                        }
+                        peripheral[0].push_back(new_charge);    
+                        new_charge->type = charge->type;
                     }
                 }
             }

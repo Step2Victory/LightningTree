@@ -71,8 +71,8 @@ private:
         params["electricity"] = 75;
     }
 
-    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params) {}
-     double getValue(const Vector& r)
+    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params) {};
+    double getValue(const Vector& r)
     {
         if (type == FieldType::constField) // поле направлено вдоль оси z, значение напряженности хранится по ключу electricity
         {
