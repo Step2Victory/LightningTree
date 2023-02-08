@@ -4,6 +4,11 @@
 #include<map>
 #include<string>
 #include<iostream>
+#include<cmath>
+#include<memory>
+
+#ifndef ExternalField_cpp
+    #define ExternalField_cpp
 
 enum FieldType {constField, gaussField};
 
@@ -13,77 +18,97 @@ struct Vector
     std::array<double, 3> data;
 
     // перегружены арифметические операции с векторами
-    Vector operator-=(const Vector& rhs)
-    {
-        data[0] -= rhs.data[0];
-        data[1] -= rhs.data[1];
-        data[2] -= rhs.data[2];
+    Vector operator-=(const Vector& rhs);
 
-        return *this;
-    }
+    Vector operator-(const Vector& rhs) const;
+    Vector operator+=(const Vector& rhs);
 
-    Vector operator-(const Vector& rhs) const
-    {
-        return {{data[0] - rhs.data[0], data[1] - rhs.data[1], data[2] - rhs.data[2]}};
-    }
-
-    Vector operator+=(const Vector& rhs)
-    {
-        data[0] += rhs.data[0];
-        data[1] += rhs.data[1];
-        data[2] += rhs.data[2];
-
-        return *this;
-    }
-
-    Vector operator+(const Vector& rhs) const
-    {
-        return {{data[0] + rhs.data[0], data[1] + rhs.data[1], data[2] + rhs.data[2]}};
-    }
+    Vector operator+(const Vector& rhs) const;
     
-    double Dot(const Vector& rhs) const // скалярное произведение
-    {
-        return data[0] * rhs.data[0] + data[1] * rhs.data[1] + data[2] * rhs.data[2];
-    }
+    double Dot(const Vector& rhs) const; // скалярное произведение
 
-    Vector operator-() const
-    {
-        return {-data[0], -data[1], -data[2]};
-    }
+    Vector operator-() const;
 
-    friend std::ostream& operator<<(std::ostream& out, const Vector& rhs)
-    {
-        return {out << '(' << rhs.data[0] << ',' << ' ' << rhs.data[1] << ',' << ' ' << rhs.data[2] << ')'};
-    }
+    friend std::ostream& operator<<(std::ostream& out, const Vector& rhs);
 
     std::string tostring() const;
 };
 
-class ExternalField
+enum ChargeType {positive, negative, both};
+
+struct Charge
 {
-private:
-    FieldType type;
-    std::unordered_map<std::string, double> params;
+    Vector point;
+    double q;
+    double Q;
+    ChargeType type;
 
-    public:
-    ExternalField(): type(FieldType::constField)
-    {
-        params["electricity"] = 75;
-    }
+    Charge(const Vector& point, double q, double Q, ChargeType type = both) : point(point), q(q), Q(Q), type(type) {};
+    Charge GetMirror(); 
+    // auto operator<=>(const Charge& rhs) const = default;
 
-    ExternalField(FieldType type, std::unordered_map<std::string, double> params) : type(type), params(params) {};
-    double getValue(const Vector& r)
-    {
-        if (type == FieldType::constField) // поле направлено вдоль оси z, значение напряженности хранится по ключу electricity
-        {
-            return r.data[2] * params["electricity"]; // потенциал отсчитываем от начала координат
-        }
-        return 0;
-    }
-
+    std::string tostring() const;
 };
 
-inline double Abs(const Vector& _vector) // модуль вектора
+double Abs(const Vector& _vector);
+
+using ChargePtr = std::shared_ptr<Charge>;
+
+class ExternalField
 {
-    return std::sqrt(_vector.Dot(_vector));
-}
+public:
+    virtual double getValue(const Vector& r) = 0;
+    virtual ~ExternalField() = default;
+};
+
+class ConstField : public ExternalField
+{
+    double electricity;
+public:
+    ConstField(double electricity) : electricity(electricity) {};
+    virtual double getValue(const Vector& r) override
+    {
+        return r.data[2] * electricity;
+    }
+};
+
+class NormalField : public ExternalField
+{
+    double sigma, a;
+public:
+    NormalField(double sigma, double a) : sigma(sigma), a(a) {};
+    virtual double getValue(const Vector& r) override
+    {
+        return 0.5 * (1 + std::erf((r.data[2] - a) / (std::sqrt(2) * sigma)));
+    }
+};
+
+class ChargeField : public ExternalField
+{
+    double eps = 1e-6;
+    double epsilon_0 = 8.85418781762 * 1e-12;
+    double pi = 3.1415926535;
+    std::vector<Charge> charges;
+
+public:
+    ChargeField(const std::initializer_list<Charge>& charges) : charges(charges) {};
+    
+    double ValueInPoint(Charge charge, const Vector& r)
+    {
+            if (Abs(charge.point - r) < eps)
+            {
+                return charge.q / (4 * pi * epsilon_0 * (eps/2));
+            }
+            return  charge.q / (4 * pi * epsilon_0 * (Abs(charge.point - r)));
+    }
+
+    virtual double getValue(const Vector& r) override
+    {
+        double ans = 0;
+        for (auto charge: charges)
+        {
+            ans += ValueInPoint(charge, r) + ValueInPoint(charge.GetMirror(), r);
+        }
+        return ans;
+    }
+};

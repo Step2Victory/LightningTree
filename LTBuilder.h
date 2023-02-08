@@ -32,7 +32,7 @@ class LTBuilder
     double eta = 0;
     double beta = 0;
     double sigma = 1;
-    ExternalField phi_a;
+    std::shared_ptr<ExternalField> phi_a;
 
 public:
     LTBuilder() = default;
@@ -62,7 +62,7 @@ public:
     LTBuilder& SetSigma(double sigma);
     LTBuilder& SetResistance(double resistance);
 
-    LTBuilder& SetExternalField(const ExternalField& phi_a);
+    LTBuilder& SetExternalField(std::shared_ptr<ExternalField> phi_a);
     LTBuilder& SetEdgeInTheMiddle(double q); // добавляет два заряда и ребро в центр расчетной области
 };
 

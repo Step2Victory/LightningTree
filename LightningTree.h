@@ -13,24 +13,6 @@
 #ifndef LightningTree_cpp
     #define LightningTree_cpp
 
-enum ChargeType {positive, negative, both};
-
-struct Charge
-{
-    Vector point;
-    double q;
-    double Q;
-    ChargeType type;
-
-    Charge(const Vector& point, double q, double Q, ChargeType type = both) : point(point), q(q), Q(Q), type(type) {};
-    std::shared_ptr<Charge> GetMirror(); 
-    // auto operator<=>(const Charge& rhs) const = default;
-
-    std::string tostring() const;
-};
-
-using ChargePtr = std::shared_ptr<Charge>;
-
 struct Edge
 {
     ChargePtr from;
@@ -74,7 +56,7 @@ class LightningTree
     double eta = 0;
     double beta = 0;
     double sigma;
-    ExternalField phi_a;
+    std::shared_ptr<ExternalField> phi_a;
     
 
     double qCountPotential(ChargePtr charge, const Vector& point);
@@ -112,7 +94,7 @@ class LightningTree
 
     LightningTree(double h, double x_min, double y_min, double z_min, double x_max, double y_max, 
     double z_max, double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
-    double E_plus, double E_minus, double eta, double beta, double sigma, ExternalField phi_a, 
+    double E_plus, double E_minus, double eta, double beta, double sigma, std::shared_ptr<ExternalField> phi_a, 
     std::unordered_map<ChargePtr, std::vector<EdgePtr>> graph, std::unordered_set<EdgePtr> edges, std::unordered_set<ChargePtr> charges); 
     friend LTBuilder;
 public:

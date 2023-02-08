@@ -13,26 +13,26 @@ void PrintCurrentState(const LightningTree& lt)
         charge_sum += elem.first->q + elem.first->Q;
         std::cout << elem.first->point << ' ' << elem.first->q << ' ' << elem.first->Q << ' ' << std::endl;
     }
-    std::cout << "Charge sum: " << charge_sum << std::endl;
+    std::cout << "C3harge sum: " << charge_sum << std::endl;
 }
 
 int main(){
-    std::unordered_map<std::string, double> params = {{"electricity", 243000}};
-    ExternalField ef(FieldType::constField, params);
+    auto field = std::make_shared<ConstField>(300000);
+    std::shared_ptr<ExternalField> ef = field;
     LightningTree lt =  LTBuilder()
                             .SetResistance(1)
                             .SetExternalField(ef)
-                            .SetEPlus(200000)
-                            .SetEMinus(100000)
+                            .SetEPlus(100000)
+                            .SetEMinus(200000)
                             .SetDeltaT(0.00001)
-                            .SetDeltat(0.00001)
+                            .SetDeltat(0.000001)
                             .SetSigma(10)
                             .SetH(100)
                             .Setr(0.01)
                             .SetEdgeInTheMiddle(0)
                             .CreateLightningTree();
     
-    int n_iter = 200;
+    int n_iter = 100;
     for (int i = 0; i < n_iter; ++i)
     {
         lt.NextIter();

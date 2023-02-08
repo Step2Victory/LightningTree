@@ -115,7 +115,7 @@ LTBuilder& LTBuilder::SetResistance(double resistance_)
     return *this;
 }
 
-LTBuilder& LTBuilder::SetExternalField(const ExternalField& phi_a_)
+LTBuilder& LTBuilder::SetExternalField(std::shared_ptr<ExternalField> phi_a_)
 {
     phi_a = phi_a_;
     return *this;
@@ -123,8 +123,8 @@ LTBuilder& LTBuilder::SetExternalField(const ExternalField& phi_a_)
 
 LTBuilder& LTBuilder::SetEdgeInTheMiddle(double q)
  {
-    ChargePtr first = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2}, -q, 0, positive);
-    ChargePtr second = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2 + h}, q, 0, negative);
+    ChargePtr first = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2}, q, 0, positive);
+    ChargePtr second = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2 + h}, -q, 0, negative);
     SetEdge(first, second);
     return *this;
  }

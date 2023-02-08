@@ -10,14 +10,6 @@ constexpr double pi = 3.1415926535;
 
 constexpr double kEps = 1e-9;
 
-// Charge
-////////////////
-ChargePtr Charge::GetMirror()
-{
-    return std::make_shared<Charge>(Vector{point.data[0], point.data[1], -point.data[2]},-q, -Q);
-}
-
-
 // Lightning Tree
 /////////////////
 
@@ -37,7 +29,7 @@ double LightningTree::qCountPotential(const Vector& point) // реализаци
     double ans = 0;
     for (auto charge: charges)
     {
-        ans += qCountPotential(charge, point) + qCountPotential(charge->GetMirror(), point);
+        ans += qCountPotential(charge, point) + qCountPotential(std::make_shared<Charge>(charge->GetMirror()), point);
     }
     return ans;
 }
@@ -56,7 +48,7 @@ double LightningTree::QCountPotential(const Vector& point) // реализаци
     double ans = 0;
     for (auto charge: charges)
     {
-        ans += QCountPotential(charge, point) + QCountPotential(charge->GetMirror(), point);
+        ans += QCountPotential(charge, point) + QCountPotential(std::make_shared<Charge>(charge->GetMirror()), point);
     }
     return ans;
 }
@@ -66,8 +58,8 @@ double LightningTree::QCountPotential(const Vector& point) // реализаци
 double LightningTree::ElectricFieldAlongEdge(EdgePtr edge) // реализация формулы (7) из Leaders.pdf
 {
     double l = Abs(edge->from->point - edge->to->point);
-    double phi_1 = qCountPotential(edge->from->point) + QCountPotential(edge->from->point) + phi_a.getValue(edge->from->point); // формула (6)
-    double phi_2 = qCountPotential(edge->to->point) + QCountPotential(edge->to->point) + phi_a.getValue(edge->to->point);
+    double phi_1 = qCountPotential(edge->from->point) + QCountPotential(edge->from->point) + phi_a->getValue(edge->from->point); // формула (6)
+    double phi_2 = qCountPotential(edge->to->point) + QCountPotential(edge->to->point) + phi_a->getValue(edge->to->point);
     return (phi_1 - phi_2) / l;
 }
 
@@ -127,12 +119,12 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     if (E > E_plus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 1))) > probability;
+        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 2))) > probability;
     }
     else if (-E > E_minus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 1))) > probability;
+        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 2))) > probability;
     }
     
     return false;
@@ -244,7 +236,7 @@ ChargePtr LightningTree::CreateChargeInPoint(const Vector& point) // созда�
 ////////////////////////////////////
 LightningTree::LightningTree(double h, double x_min, double y_min, double z_min, double x_max, double y_max, 
 double z_max, double delta_t, double delta_T, double r, double R, double q_plus_max, double q_minus_max, double resistance,
-double E_plus, double E_minus, double eta, double beta, double sigma, ExternalField phi_a, 
+double E_plus, double E_minus, double eta, double beta, double sigma, std::shared_ptr<ExternalField> phi_a, 
 std::unordered_map<ChargePtr, std::vector<EdgePtr>> graph, std::unordered_set<EdgePtr> edges, std::unordered_set<ChargePtr> charges)
 : iter_number_charges(0), iter_number_edges(0),
 h(h), x_min(x_min), y_min(y_min), z_min(z_min), x_max(x_max), y_max(y_max), z_max(z_max), delta_t(delta_t), delta_T(delta_T), r(r), R(R),
@@ -274,11 +266,11 @@ void LightningTree::NextIterCharges() // count new charges
         {
             if (edge->from == charge)
             {
-                delta_charges[charge].first += CurrentAlongEdge(edge);
+                delta_charges[charge].first -= CurrentAlongEdge(edge);
             }
             else
             {
-                delta_charges[charge].first -= CurrentAlongEdge(edge);
+                delta_charges[charge].first += CurrentAlongEdge(edge);
             }
         }
         delta_charges[charge].first -= CurrentSheath(charge);
