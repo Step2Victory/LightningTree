@@ -182,19 +182,20 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
     setting = {'showbackground': False, 'showticklabels': False, 'showgrid': False, 'zeroline': False}
     setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False}
     layout = go.Layout(showlegend=False, hovermode='closest',
-                       scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting_z}
+                       scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting_z},
+                       uirevision=True
                        )
     
     app = JupyterDash('SimpleExemple')
     app.layout = html.Div([html.Div([html.H4("Сумма распределения зарядов"),
                                      dcc.Graph(id='graph_distrib',
                                                style={'height': '90vh'})
-                                     ], style={'display': 'inline-block', 'width': '20%'}),
+                                     ], style={'display': 'inline-block', 'width': '30%'}),
                            html.Div([html.H1("Граф дерева молнии",
                                              style={'textAlign': 'center', 'color': 'gold'}),
                                      dcc.Graph(id='graph_tree',
                                                style={'height': '90vh'})
-                                     ], style={'display': 'inline-block', 'width': '80%'}),
+                                     ], style={'display': 'inline-block', 'width': '70%'}),
                            dcc.Interval(id='interval-component',
                                         interval=interval*1000,
                                         n_intervals=0)
@@ -254,7 +255,7 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
                 go.Scatter(x=distr_charges[-1].sum_Q, y=distr_charges[-1].z, mode='lines+markers', name='Сумма Q')]
 
         fig = go.Figure(data=data, layout=layout)
-        fig2 = go.Figure(data=data2)
+        fig2 = go.Figure(data=data2, layout={'uirevision': 'True'})
         
         return fig, fig2
                                              
