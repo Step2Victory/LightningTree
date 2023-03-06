@@ -1,18 +1,27 @@
 #include "LTBuilder.h"
 
-LightningTree LTBuilder::CreateLightningTree()
+// template <class Tree>
+// std::unique_ptr<Tree>  LTBuilder::CreateLightningTree()
+// {
+//     return std::make_unique<Tree>(h, delta_t, r, R, n_peripheral_layers,
+//     q_plus_max, q_minus_max, Q_plus_s, 
+//     Q_minus_s, resistance, E_plus, E_minus, 
+//     eta, beta, sigma, phi_a, graph, edges, vertices);
+// }
+
+LTBuilder& LTBuilder::SetPeripheralLayers(size_t n_peripheral_layers_)
 {
-    return LightningTree(h, x_min, y_min, z_min, x_max, y_max, z_max, delta_t, delta_T, r, R, 
-    q_plus_max, q_minus_max, resistance, E_plus, E_minus, eta, beta, sigma, phi_a, graph, edges, charges);
+    n_peripheral_layers = n_peripheral_layers_;
+    return *this;
 }
     
-LTBuilder& LTBuilder::SetCharge(std::shared_ptr<Charge> charge)
+LTBuilder& LTBuilder::SetCharge(VertexPtr vertex)
 {
-    charges.insert(charge);
+    vertices.insert(vertex);
     return *this;
 }
 
-LTBuilder& LTBuilder::SetEdge(std::shared_ptr<Edge> edge)
+LTBuilder& LTBuilder::SetEdge(EdgePtr edge)
 {
     SetCharge(edge->from);
     SetCharge(edge->to);
@@ -22,7 +31,7 @@ LTBuilder& LTBuilder::SetEdge(std::shared_ptr<Edge> edge)
     return *this;
 }
 
-LTBuilder& LTBuilder::SetEdge(std::shared_ptr<Charge> from, std::shared_ptr<Charge> to)
+LTBuilder& LTBuilder::SetEdge(VertexPtr from, VertexPtr to)
 {
     SetCharge(from);
     SetCharge(to);
@@ -43,26 +52,6 @@ LTBuilder& LTBuilder::SetEMinus(double E_minus_)
     return *this;
 }
 
-LTBuilder& LTBuilder::SetXLimits(double x_min_, double x_max_)
-{
-    x_min = x_min_;
-    x_max = x_max_;
-    return *this;
-}
-
-LTBuilder& LTBuilder::SetYLimits(double y_min_, double y_max_)
-{
-    y_min = y_min_;
-    y_max = y_max_;
-    return *this;
-}
-
-LTBuilder& LTBuilder::SetZLimits(double z_min_, double z_max_)
-{
-    z_min = z_min_;
-    z_max = z_max_;
-    return *this;
-}
 LTBuilder& LTBuilder::SetH(double h_)
 {
     h = h_;
@@ -84,12 +73,6 @@ LTBuilder& LTBuilder::SetR(double R_)
 LTBuilder& LTBuilder::SetDeltat(double delta_t_)
 {
     delta_t = delta_t_;
-    return *this;
-}
-
-LTBuilder& LTBuilder::SetDeltaT(double delta_T_)
-{
-    delta_T = delta_T_;
     return *this;
 }
 
@@ -121,10 +104,22 @@ LTBuilder& LTBuilder::SetExternalField(std::shared_ptr<ExternalField> phi_a_)
     return *this;
 }
 
-LTBuilder& LTBuilder::SetEdgeInTheMiddle(double q)
- {
-    ChargePtr first = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2}, q, 0, positive);
-    ChargePtr second = std::make_shared<Charge>(Vector{(x_max + x_min) / 2, (y_max + y_min) / 2, (z_max + z_min) / 2 + h}, -q, 0, negative);
-    SetEdge(first, second);
+LTBuilder& LTBuilder::Countqmax()
+{
+    q_minus_max = 2 * pi * epsilon_0 * r * h * E_minus;
+    q_plus_max = 2 * pi * epsilon_0 * r * h * E_plus;
     return *this;
- }
+}
+
+LTBuilder& LTBuilder::CountQs()
+{
+    Q_plus_s = 4 * pi * epsilon_0 * R * R * E_plus;
+    Q_minus_s = 4 * pi * epsilon_0 * R * R * E_minus;
+    return *this;
+}
+
+LTBuilder& LTBuilder::CountDeltat()
+{
+    delta_t = 2 * epsilon_0 * h / (sigma * r) / 5;
+    return *this;
+}
