@@ -25,6 +25,8 @@ class LTBuilder
     double resistance = 5;
     double E_plus = 50;
     double E_minus = 100;
+    double E_b = 0;
+    double E_0 = 0;
     double eta = 0;
     double beta = 0;
     double sigma = 1;
@@ -37,7 +39,7 @@ public:
     template<class Tree>
     inline std::unique_ptr<Tree> CreateLightningTree()
     {
-            return std::make_unique<Tree>(h, delta_t, r, R, n_peripheral_layers,
+        return std::make_unique<Tree>(h, delta_t, r, R, n_peripheral_layers,
         q_plus_max, q_minus_max, Q_plus_s, 
         Q_minus_s, resistance, E_plus, E_minus, 
         eta, beta, sigma, phi_a, graph, edges, vertices);
@@ -51,12 +53,16 @@ public:
 
     LTBuilder& SetEPlus(double E_plus);
     LTBuilder& SetEMinus(double E_minus);
+    LTBuilder& SetEb(double E_b);
+    LTBuilder& SetE0(double E_0);
 
     LTBuilder& SetH(double h);
     LTBuilder& Setr(double r);
     LTBuilder& SetR(double R);
     
     LTBuilder& SetDeltat(double delta_t);
+    LTBuilder& MultiplyDeltat(double d);
+
 
     LTBuilder& SetEta(double eta);
     LTBuilder& SetBeta(double beta);

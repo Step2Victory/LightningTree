@@ -7,6 +7,7 @@
 #include "Vertex.h"
 #include "Edge.h"
 #include "ExternalField.h"
+#include <fstream>
 
 class AbstractTree
 {
@@ -72,8 +73,33 @@ public:
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 
     void ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history);
+   
 
     inline virtual ~AbstractTree() {};
 };
+
+template <class Tree>
+std::string TreeToString(const Tree& tree)
+{
+    std::string outtree = "";
+    //string outcharges;
+    for(auto elem: tree.GetGraph()){
+        ///outtree += "" + *elem.first ;
+        for(int i = 0; i < elem.second.size(); i++)
+        {
+            outtree += "" + elem.second[i]->from->tostring() + "; " + elem.second[i]->to->tostring() + "; " + std::to_string(elem.second[i]->sigma) + "\n";
+        }
+    }
+
+    return outtree;
+}
+
+template <class Tree>
+void WriteInFile(const Tree& tree)
+{
+    std::ofstream fout("LightningTree.txt", std::ios_base::out);
+    fout << TreeToString(tree);
+    fout.close();
+}
 
 

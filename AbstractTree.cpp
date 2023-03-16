@@ -21,7 +21,7 @@ void AbstractTree::NextIter() // combine charges and edges count
 
 void AbstractTree::Memorize()
 {
-    for (auto vertex: vertices)
+    for (auto& vertex: vertices)
     {
         vertex->Memorize();
     }
@@ -71,7 +71,7 @@ void AbstractTree::DeleteCharge(VertexPtr charge) // удаляет заряд �
 {
     if (graph.contains(charge))
     {
-        for (auto edge: graph[charge])
+        for (auto& edge: graph[charge])
         {
             if (edge->from == charge)
             {
@@ -138,7 +138,7 @@ std::optional<VertexPtr> AbstractTree::FindChargeInPoint(const Vector& point) //
 
 bool AbstractTree::FindInTree(const Vector& point)
 {
-    for (auto edge : edges)
+    for (auto& edge : edges)
     {
         if (Abs(edge->to->point - point) < kEps || Abs(edge->from->point - point) < kEps)
         {
@@ -150,7 +150,7 @@ bool AbstractTree::FindInTree(const Vector& point)
 
 bool AbstractTree::FindInGivenEdges(const Vector& point, const std::vector<EdgePtr>& edges) // проверяет является заряд в точке point концом какого-нибудь ребра из edges
 {
-    for (auto edge : edges)
+    for (auto& edge : edges)
     {
         if (Abs(edge->to->point - point) < kEps || Abs(edge->from->point - point) < kEps)
         {
@@ -175,11 +175,11 @@ VertexPtr AbstractTree::CreateChargeInPoint(const Vector& point) // создае
 void AbstractTree::NextIterCharges() // count new charges
 {
     std::unordered_map<VertexPtr, std::pair<double, double>> delta_charges;
-    for (auto elem : graph)
+    for (auto& elem : graph)
     {
         VertexPtr vertex = elem.first;
         std::vector<EdgePtr> edges = elem.second;
-        for (auto edge: edges)
+        for (auto& edge: edges)
         {
             if (edge->from == vertex)
             {
@@ -193,7 +193,7 @@ void AbstractTree::NextIterCharges() // count new charges
         delta_charges[vertex].first -= CurrentSheath(vertex);
         delta_charges[vertex].second += CurrentSheath(vertex);
     }
-    for (auto elem : delta_charges)
+    for (auto& elem : delta_charges)
     {
         elem.first->q += delta_charges[elem.first].first * delta_t;
         elem.first->Q += delta_charges[elem.first].second * delta_t;
@@ -219,22 +219,22 @@ void AbstractTree::Info()
 void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history)
 {
     std::ofstream fout(table_vertex);
-    for (auto vertex: vertices)
+    for (auto& vertex: vertices)
     {
         fout << vertex << ' ' << *vertex << '\n';
     }
     fout.close();
     fout.open(table_edges);
-    for (auto edge: edges)
+    for (auto& edge: edges)
     {
         fout << edge << ' ' << *edge << '\n';
     }
     fout.close();
     fout.open(table_q_history);
-    for (auto vertex: vertices)
+    for (auto& vertex: vertices)
     {
         fout << vertex << ' ';
-        for (auto elem: vertex->q_history)
+        for (auto& elem: vertex->q_history)
         {
             fout << elem << ' ';
         }
@@ -242,10 +242,10 @@ void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::strin
     }
     fout.close();
     fout.open(table_Q_history);
-    for (auto vertex: vertices)
+    for (auto& vertex: vertices)
     {
         fout << vertex << ' ';
-        for (auto elem: vertex->Q_history)
+        for (auto& elem: vertex->Q_history)
         {
             fout << elem << ' ';
         }
