@@ -262,10 +262,25 @@ def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-1
 
     app.run_server(mode=mode)  # inline - внутри jupyter; external - в браузере
 
+def open_file(filename):
+    result = pd.DataFrame()
+    if "history" in filename:
+        with open(filename, 'r') as file:
+            for line in file:
+                array = (line.rstrip()).split(" ")
+                temp = pd.DataFrame({array[0] : array[1:]})
+                result = pd.concat([result, temp], axis=1)
+    else :
+        result = pd.read_csv(filename, delim_whitespace=True)
+    return result
+
 
 def main():
     # edges = openTree("LightningTree.txt")
-    map3d_tree_plotly("LightningTree.txt")#, "xz", Range=[-100, 0])
+    # map3d_tree_plotly("LightningTree.txt")#, "xz", Range=[-100, 0])
+    # vertex = open_file("LightningTree data\\vertex_table.txt")
+    Q_history = open_file("LightningTree data\\Q_history.txt")
+    print(Q_history)
 
 
 if __name__ == '__main__':
