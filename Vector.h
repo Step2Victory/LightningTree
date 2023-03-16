@@ -19,6 +19,7 @@ struct Vector
     double Dot(const Vector& rhs) const; // скалярное произведение
 
     Vector operator-() const;
+    std::string tostring() const;
 
 };
 

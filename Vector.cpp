@@ -62,3 +62,8 @@ double Abs(const Vector& vector)
 {
     return std::sqrt(vector.Dot(vector));
 }
+
+std::string Vector::tostring() const
+{
+    return {"(" + std::to_string(data[0]) + ", " + std::to_string(data[1]) + ", " + std::to_string(data[2]) + ")"};
+}
