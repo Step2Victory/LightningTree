@@ -219,13 +219,15 @@ void AbstractTree::Info()
 void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history)
 {
     std::ofstream fout(table_vertex);
-    for (auto& vertex: vertices)
+    // fout << "id_vertex" << ' ' << 'q' << 'Q' << 'x' << 'y' << 'z' << '\n';
+    for (auto vertex: vertices)
     {
         fout << vertex << ' ' << *vertex << '\n';
     }
     fout.close();
     fout.open(table_edges);
-    for (auto& edge: edges)
+    // fout << "id_edge" << ' ' << 'from' << 'to' << '\n';
+    for (auto edge: edges)
     {
         fout << edge << ' ' << *edge << '\n';
     }
