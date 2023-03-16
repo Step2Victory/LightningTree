@@ -18,7 +18,7 @@ int main(){
     // auto field = std::make_shared<ConstField>(300000);
     auto field = std::make_shared<NormalField>(2000, 8000, 335'000'000);
 
-    auto h = 10;
+    double h = 10;
     std::shared_ptr<ExternalField> ef = field;
     auto lt =  LTBuilder()
                     .SetPeripheralLayers(1000000)
@@ -30,9 +30,9 @@ int main(){
                     .SetEb(3000000)
                     .SetSigma(1)
                     .SetH(h)
-                    .Setr(0.1)
-                    .SetR(10)
-                    .SetEdge(std::make_shared<Vertex>(Vector{0, 0, 8100 - h}, 0, 0), std::make_shared<Vertex>(Vector{0, 0, 8000}, 0, 0))
+                    .Setr(h / 100)
+                    .SetR(h)
+                    .SetEdge(std::make_shared<Vertex>(Vector{0, 0, 8100.0 - h}, 0, 0), std::make_shared<Vertex>(Vector{0, 0, 8000}, 0, 0))
                     .CountDeltat()
                     .Countqmax()
                     .CountQs()
@@ -42,18 +42,16 @@ int main(){
     
     int n_iter = 10000;
     auto start = std::chrono::system_clock::now();
+    lt->ParamsInfo();
     for (int i = 0; i < n_iter; ++i)
     {
         lt->NextIter();
         WriteInFile<LightningTree>(*lt);
-        // lt->Info();
-        // PrintCurrentState(*lt);
-        // std::cout << '\n';
     }
     auto end = std::chrono::system_clock::now();
     std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
     lt->Info();
     // PrintCurrentState(*lt);
-    lt->ReturnFiles("vertex_table.txt", "edge_table.txt", "q_history.txt", "Q_history.txt");
+    lt->ReturnFiles("data/vertex_table.txt", "data/edge_table.txt", "data/q_history.txt", "data/Q_history.txt");
     return 0;
 }

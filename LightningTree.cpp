@@ -1,9 +1,8 @@
 #include "LightningTree.h"
 
 
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_real_distribution<> dis(0.5, 1);
+std::mt19937 gen(42);
+std::uniform_real_distribution<> dis(0, 1);
 
 // Lightning Tree
 /////////////////
@@ -14,7 +13,8 @@ LightningTree::LightningTree(double h, double delta_t, double r, double R, doubl
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> graph, std::unordered_set<EdgePtr> edges, std::unordered_set<VertexPtr> vertices) : AbstractTree(h, delta_t, r, R, n_peripheral_layers,
         q_plus_max, q_minus_max, Q_plus_s, 
         Q_minus_s, resistance, E_plus, E_minus, 
-        eta, beta, sigma, phi_a, graph, edges, vertices) {};
+        eta, beta, sigma, phi_a, graph, edges, vertices) {
+        };
 // Helper functions for making new edge
 //////////////////////////////////
 bool LightningTree::MakeEdge(EdgePtr edge) 

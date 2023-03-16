@@ -1,5 +1,7 @@
 import plotly.graph_objects as go
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 from jupyter_dash import JupyterDash
 from dash import dcc, html
@@ -270,17 +272,98 @@ def open_file(filename):
                 array = (line.rstrip()).split(" ")
                 temp = pd.DataFrame({array[0] : array[1:]})
                 result = pd.concat([result, temp], axis=1)
+                result = result.astype('float')
+                
     else :
         result = pd.read_csv(filename, delim_whitespace=True)
     return result
+
+
+class Result:
+    def __init__(self, folder):
+        self.df_vertex = open_file(folder+'/vertex_table.txt')
+
+        self.df_vertex["new_id"] = self.df_vertex.index
+        self.df_vertex.set_index('id', inplace=True)
+        self.df_edge = open_file(folder+'/edge_table.txt')
+        
+        self.df_q_history = open_file(folder+'/q_history.txt')
+        self.df_Q_history = open_file(folder+'/Q_history.txt')
+        
+        
+        self.df_edge = self.df_edge.apply(lambda row: {\
+            "id" : row['id'] ,"from" : self.df_vertex.loc[row["from"], "new_id"],\
+                 "to" : self.df_vertex.loc[row["to"], "new_id"]\
+                    },\
+                         axis=1, result_type="expand")
+        self.df_Q_history.columns = [self.df_vertex.loc[col, "new_id"] for col in self.df_Q_history.columns]
+        self.df_q_history.columns = [self.df_vertex.loc[col, "new_id"] for col in self.df_q_history.columns]
+        self.df_vertex.set_index('new_id', inplace=True)
+
+    def save_history(self):
+        for column in self.df_q_history.columns:
+            y = self.df_q_history[column].dropna()
+            x = np.linspace(0, len(y), len(y))
+
+            # x = np.linspace(start=0, stop=len(col) - 1, num=min(1000, len(col)))
+            # y = [self.df_q_history[column].dropna().loc[int(coord)] for coord in x]
+            plt.plot(x, y)
+            plt.title(f"q: Vertex No. {column}")
+            plt.xlabel("Iter No.")
+            plt.ylabel("Charge (q), кл")
+            plt.savefig(f"images/q{column}.pdf")
+            plt.close()
+        
+        for column in self.df_Q_history.columns:
+            y = self.df_Q_history[column].dropna()
+            x = np.linspace(start=0, stop=y.shape[0], num=y.shape[0])
+            plt.plot(x, y)
+            plt.title(f"Q: Vertex No. {column}")
+            plt.xlabel("Iter No.")
+            plt.ylabel("Charge (Q), кл")
+            plt.savefig(f"images/Q{column}.pdf")
+            plt.close()
+
+    def plot_tree(self):
+        ax = plt.figure().add_subplot(projection='3d')
+        for _, row in self.df_edge.iterrows():
+            
+            fr = row['from']
+            to = row['to']
+            edge_x = [self.df_vertex.loc[fr, 'x'], self.df_vertex.loc[to, 'x']]
+            edge_y = [self.df_vertex.loc[fr, 'y'], self.df_vertex.loc[to, 'y']]
+            edge_z = [self.df_vertex.loc[fr, 'z'], self.df_vertex.loc[to, 'z']]
+            ax.plot(edge_x, edge_y, edge_z)
+
+        for id, row in self.df_vertex.iterrows():
+            ax.text(row['x'], row['y'], row['z'], str(id))
+            
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        
+        plt.savefig("tree.pdf")
+        plt.show()
+
+        
+        
+
+
+
+
+        
+    
 
 
 def main():
     # edges = openTree("LightningTree.txt")
     # map3d_tree_plotly("LightningTree.txt")#, "xz", Range=[-100, 0])
     # vertex = open_file("LightningTree data\\vertex_table.txt")
-    Q_history = open_file("LightningTree data\\Q_history.txt")
-    print(Q_history)
+    # Q_history = open_file("data/Q_history.txt")
+    res = Result("data")
+    res.save_history()
+    res.plot_tree()
+    
 
 
 if __name__ == '__main__':

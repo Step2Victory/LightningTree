@@ -70,6 +70,8 @@ public:
 
 
     void Info();
+    void ParamsInfo();
+    
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 
     void ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history);

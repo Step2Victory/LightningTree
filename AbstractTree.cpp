@@ -206,8 +206,20 @@ std::unordered_map<VertexPtr, std::vector<EdgePtr>> AbstractTree::GetGraph() con
     return graph;
 }
 
+void AbstractTree::ParamsInfo()
+{ 
+    std::cout << "Lightning Tree params info:" << '\n';
+    std::cout << "delta_t " << delta_t << '\n';
+    std::cout << "q_minus_max " << q_minus_max << '\n';
+    std::cout << "q_plus_max " << q_plus_max << '\n';
+    std::cout << "Q_minus_s " << Q_minus_s << '\n';
+    std::cout << "Q_plus_s " << Q_plus_s << '\n';
+    std::cout << std::endl;
+}
+
 void AbstractTree::Info()
 {
+    
     std::cout << "Ligtning Tree info:" << '\n';
     std::cout << "Iter number " << iter_number << '\n';
     std::cout << "Vertices count: " << vertices.size() << '\n';
@@ -219,14 +231,14 @@ void AbstractTree::Info()
 void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history)
 {
     std::ofstream fout(table_vertex);
-    // fout << "id_vertex" << ' ' << 'q' << 'Q' << 'x' << 'y' << 'z' << '\n';
-    for (auto vertex: vertices)
+    fout << "id" << ' ' << 'q' << ' ' << 'Q' << ' ' << 'x' << ' ' << 'y' << ' ' << 'z' << '\n';
+    for (auto& vertex: vertices)
     {
         fout << vertex << ' ' << *vertex << '\n';
     }
     fout.close();
     fout.open(table_edges);
-    // fout << "id_edge" << ' ' << 'from' << 'to' << '\n';
+    fout << "id" << ' ' << "from" << ' ' << "to" << '\n';
     for (auto edge: edges)
     {
         fout << edge << ' ' << *edge << '\n';
