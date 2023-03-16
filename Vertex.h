@@ -20,6 +20,11 @@ struct Vertex
     {
         return Vertex{Vector{point.x(), point.y(), -point.z()},-q, -Q};
     }
+
+    std::string tostring() const
+    {
+        return {point.tostring() + ", " + std::to_string(Q) + ", " + std::to_string(q)};
+    }
 };
 
 using VertexPtr = std::shared_ptr<Vertex>;
