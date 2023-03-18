@@ -1,66 +1,52 @@
-#include<vector>
-#include<array>
-#include<map>
-#include<string>
+#pragma once
+#include <cmath>
+#include <vector>
 
-enum FieldType {constField, gaussField};
+#include "Vector.h"
+#include "Vertex.h"
 
-
-struct Vector;
 
 class ExternalField
 {
-private:
-    FieldType type;
-    std::map<std::string, double> params;
 public:
-    ExternalField(FieldType type, std::map<std::string, double> params) : type(type), params(params)
-    {}
-    Vector getValue(Vector r);
-    ~ExternalField();
+    virtual double getValue(const Vector& r) = 0;
+    virtual ~ExternalField() = default;
 };
 
-struct Vector
+class ConstField : public ExternalField
 {
-    std::array<double, 3> data;
-
-    Vector operator-=(const Vector& rhs)
+    double electricity;
+public:
+    ConstField(double electricity) : electricity(electricity) {};
+    virtual double getValue(const Vector& r) override
     {
-        data[0] -= rhs.data[0];
-        data[1] -= rhs.data[1];
-        data[2] -= rhs.data[2];
+        return r.z() * electricity;
     }
-
-    Vector operator-(const Vector& rhs) const
-    {
-        return {{data[0] - rhs.data[0], data[1] - rhs.data[1], data[2] - rhs.data[2]}};
-    }
-
-    Vector operator+=(const Vector& rhs)
-    {
-        data[0] += rhs.data[0];
-        data[1] += rhs.data[1];
-        data[2] += rhs.data[2];
-    }
-
-    Vector operator+(const Vector& rhs) const
-    {
-        return {{data[0] + rhs.data[0], data[1] + rhs.data[1], data[2] + rhs.data[2]}};
-    }
-
-    double Dot(const Vector& rhs) const // DotProduct
-    {
-        return data[0] * rhs.data[0] + data[1] * rhs.data[1] + data[2] * rhs.data[2];
-    }
-
-    Vector operator-() const
-    {
-        return {-data[0], -data[1], -data[2]};
-    }
-
 };
 
-double Abs(const Vector& vector)
+class NormalField : public ExternalField
 {
-    return std::sqrt(vector.Dot(vector));
-}
+    double sigma, a;
+    double mult;
+public:
+    NormalField(double sigma, double a, double mult) : sigma(sigma), a(a), mult(mult) {};
+    virtual double getValue(const Vector& r) override
+    {
+        return (1 + std::erf((r.z() - a) / (std::sqrt(2) * sigma))) * mult;
+        // return 0.5 * (1 + std::erf((r.data[2] - a) / (std::sqrt(2) * sigma)));
+    }
+};
+
+class ChargeField : public ExternalField
+{
+    const double eps = 1e-6;
+    std::vector<VertexPtr> charges;
+
+public:
+    ChargeField(const std::initializer_list<VertexPtr>& charges) : charges(charges) {};
+    
+    virtual double getValue(const Vector& r) override
+    {
+        return Potential(charges, r, eps);
+    }
+};
