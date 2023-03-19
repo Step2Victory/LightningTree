@@ -33,7 +33,8 @@ void WormTree::NextIterEdges()
                         vertices.insert(new_vertex);
                     }
                     DeleteFromPerephery(vertex);
-                    new_graph[new_vertex].push_back(edge);   
+                    new_graph[new_vertex].push_back(edge);
+                    peripheral[0].push_back(new_vertex);    
                 }
             }
         }

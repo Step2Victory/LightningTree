@@ -2,7 +2,6 @@
 #include "Vector.h"
 #include <vector>
 #include <memory>
-#include <string>
 
 struct Vertex
 {
