@@ -2,6 +2,7 @@
 #include <array>
 #include <iostream>
 #include "Constants.h"
+#include <string>
 
 struct Vector
 {

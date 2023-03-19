@@ -8,6 +8,7 @@
 #include "Edge.h"
 #include "ExternalField.h"
 #include <fstream>
+#include "config.h"
 
 class AbstractTree
 {
@@ -99,7 +100,7 @@ std::string TreeToString(const Tree& tree)
 template <class Tree>
 void WriteInFile(const Tree& tree)
 {
-    std::ofstream fout("LightningTree.txt", std::ios_base::out);
+    std::ofstream fout(path_data + "\\LightningTree.txt", std::ios_base::out);
     fout << TreeToString(tree);
     fout.close();
 }

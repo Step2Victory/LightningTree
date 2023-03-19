@@ -1,6 +1,7 @@
 #include "LTBuilder.h"
 #include "LightningTree.h"
 #include <chrono>
+#include "config.h"
 
 
 void PrintCurrentState(const LightningTree& lt)
@@ -52,6 +53,6 @@ int main(){
     std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
     lt->Info();
     // PrintCurrentState(*lt);
-    lt->ReturnFiles("data/vertex_table.txt", "data/edge_table.txt", "data/q_history.txt", "data/Q_history.txt");
+    lt->ReturnFiles(path_data + "\\vertex_table.txt", path_data + "\\edge_table.txt", path_data + "\\q_history_1.txt", path_data + "\\Q_history.txt");
     return 0;
 }
