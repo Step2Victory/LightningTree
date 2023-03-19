@@ -1,369 +1,117 @@
 import plotly.graph_objects as go
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 from jupyter_dash import JupyterDash
 from dash import dcc, html
-from dash.dependencies import Output, Input
+# from dash.dependencies import Output, Input
 
 
-class Vector(object):
-    def __init__(self, _point: list[float]):
-        self.x = _point[0]
-        self.y = _point[1]
-        self.z = _point[2]
+class LightningTree(object):
+    def __init__ (self, folder):
+        self.df_vertex = self.open_file(folder+'/vertex_table.txt')
+        self.df_edge = self.open_file(folder+'/edge_table.txt')
+        # self.df_q_history = self.open_file(folder+'/q_history_1.txt')
+        # self.df_Q_history = self.open_file(folder+'/Q_history.txt')
 
-    def __str__(self):
-        return "({}, {}, {})".format(self.x, self.y, self.z)
-
-    # def __iter__(self):
-    #     return self
-
-    # def __next__(self):
-    #     return self
-
-
-class Charge(object):
-    def __init__(self, _point: Vector, _q: float, _Q: float):
-        self.point = _point
-        self.q = _q
-        self.Q = _Q
-
-    def __str__(self):
-        return "{}, {}, {}".format(self.point, self.q, self.Q)
-
-
-class Edge(object):
-    def __init__(self, _charges: list[Charge], _sigma: float):
-        self._from = _charges[0]
-        self._to = _charges[1]
-        self.sigma = _sigma
-
-    def __str__(self):
-        return "{}; {}; {}".format(self._from, self._to, self.sigma)
-
-
-def openTree(filename):
-    edges = []
-    with open(filename, 'r') as file:
-        text = file.read()
-        charges = []
-        for value in text.splitlines():
-            _sigma = float(value.rsplit(';', 1)[1])
-            for charge in (value.rsplit(';', 1)[0]).split(';'):
-                _q = float(charge.strip().rsplit(',', 2)[1])
-                _Q = float(charge.strip().rsplit(',', 2)[2])
-                _point = [float(point.strip('( )')) for point in (charge.strip().rsplit(',', 2)[0]).split(',')]
-                # print(_point, _q, _Q)
-                charges.append(Charge(Vector(_point.copy()), _q, _Q))
-            edges.append(Edge(charges, _sigma))
-            charges.clear()
-    return edges
-
-def parseTreeToDF(edges):
-    edge_x, edge_y, edge_z = [], [], []
-    edge_color = []
-    node_x, node_y, node_z = [], [], []
-    node_q, node_Q = [], []
-    for edge in edges:
-        edge_x.append(edge._from.point.x)
-        edge_y.append(edge._from.point.y)
-        edge_z.append(edge._from.point.z)
-
-        node_x.append(edge._from.point.x)
-        node_y.append(edge._from.point.y)
-        node_z.append(edge._from.point.z)
-
-        node_q.append(edge._from.q)
-        node_Q.append(edge._from.Q)
-
-        edge_x.append(edge._to.point.x)
-        edge_y.append(edge._to.point.y)
-        edge_z.append(edge._to.point.z)
-
-        node_x.append(edge._to.point.x)
-        node_y.append(edge._to.point.y)
-        node_z.append(edge._to.point.z)
-
-        node_q.append(edge._to.q)
-        node_Q.append(edge._to.Q)
-        
-        if(edge._to.point.z - edge._from.point.z > 0):
-            edge_color.append(1)
-            edge_color.append(1)
+    def open_file(self, filename: str):
+        result = pd.DataFrame()
+        if "history" in filename:
+            with open(filename, 'r') as file:
+                for line in file:
+                    array = (line.rstrip()).split(" ")
+                    temp = pd.DataFrame({array[0] : array[1:]})
+                    result = pd.concat([result, temp], axis=1)
+                    result = result.astype('float')
+                    
         else:
-            edge_color.append(-1)
-            edge_color.append(-1)
-
-        edge_x.append(None)
-        edge_y.append(None)
-        edge_z.append(None)
-        edge_color.append(None)
-
-    df_edges = pd.DataFrame({"x": edge_x, "y": edge_y, "z": edge_z, 'color': edge_color})
-    df_nodes = pd.DataFrame({"x": node_x, "y": node_y, "z": node_z, "q": node_q, "Q": node_Q})
+            result = pd.read_csv(filename, delim_whitespace=True)
+        return result
     
-    return df_edges, df_nodes
+    # Метод расчета значений по группе
+    def distribution(self, df:pd.DataFrame, groupby:str, operarion:str, colomn:str):
+        df_result = df.groupby([groupby], ).agg({colomn:[operarion]})
+        return df_result
 
-def slice_selection(df_edges, df_nodes, place, value, Range):       
-    if place != "":
-        if (Range == [-10, 10]) and (value != 0):
-            Range = [Range[0] + value, Range[1] + value]
+    # Создание 2D графика
+    def plot(self, operation:str):
+        df_q = self.distribution(self.df_vertex, 'z', operation, 'q')
+        df_Q = self.distribution(self.df_vertex, 'z', operation, 'Q')
+        data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
+                           mode='lines+markers', name=operation + ' q'),
+                go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
+                           mode='lines+markers', name=operation + ' Q')]
+        fig = go.Figure(data=data, layout={'uirevision': 'True'})
+        return fig
 
-        low, high = Range
-        mask_nodes = True
-        mask_edges = True
-        match place:
-            case "XZ" | "ZX":
-                mask_nodes = (df_nodes.y >= low) & (df_nodes.y <= high)
-                mask = []
-                for i in range(0, len(df_edges.y), 3):
-                    if (low <= df_edges.y[i] <= high) and (low <= df_edges.y[i + 1] <= high):
-                        mask.append(True)
-                        mask.append(True)
-                        mask.append(True)
-                    else:
-                        mask.append(False)
-                        mask.append(False)
-                        mask.append(False)
-                mask_edges = pd.Series(data=mask)
-            case "YZ" | "ZY":
-                mask_nodes = (df_nodes.x >= low) & (df_nodes.x <= high)
-                mask = []
-                for i in range(0, len(df_edges.x), 3):
-                    if (low <= df_edges.x[i] <= high) and (low <= df_edges.x[i + 1] <= high):
-                        mask.append(True)
-                        mask.append(True)
-                        mask.append(True)
-                    else:
-                        mask.append(False)
-                        mask.append(False)
-                        mask.append(False)
-                mask_edges = pd.Series(data=mask)
-            case "XY" | "YX":
-                mask_nodes = (df_nodes.z >= low) & (df_nodes.z <= high)
-                mask = []
-                for i in range(0, len(df_edges.z), 3):
-                    if (low <= df_edges.z[i] <= high) and (low <= df_edges.z[i + 1] <= high):
-                        mask.append(True)
-                        mask.append(True)
-                        mask.append(True)
-                    else:
-                        mask.append(False)
-                        mask.append(False)
-                        mask.append(False)
-                mask_edges = pd.Series(data=mask)
-        df_edges = df_edges[mask_edges]
-        df_nodes = df_nodes[mask_nodes]   
-    elif value != 0 or Range != [-10, 10]:
-        print("Не введена плоскость!")
-        
-    return df_edges, df_nodes
+    # Создание 3D графа дерева молнии
+    def plot_tree(self):
+        # Настройки для отображения графиков
+        scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
+        scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
+        setting = {'showbackground': False, 'showticklabels': False, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат
+        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат для оси z
 
-def sum_distribution(df_nodes):
-    data_z = []
-    temp = []
-    data_sum_q = []
-    data_sum_Q = []
-    for z in df_nodes.z:
-        data_z.append(z)
-        temp = df_nodes.loc[df_nodes['z'] == z, ['q', 'Q']].sum()
-        data_sum_q.append(temp[0])
-        data_sum_Q.append(temp[1])
-        
-        
-    df = pd.DataFrame({"z": data_z, "sum_q": data_sum_q, "sum_Q": data_sum_Q})                    
-    return df.sort_values('z')
-
-def map3d_tree_plotly(filename, place: str = "", value: int = 0, Range: list=[-10, 10], mode:str='external', interval:float=5):
-    place = place.upper()
-    distr_charges = []
-    scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
-    scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
-    setting = {'showbackground': False, 'showticklabels': False, 'showgrid': False, 'zeroline': False}
-    setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False}
-    layout = go.Layout(showlegend=False, hovermode='closest',
+        # Создание настройки отображения графического объекта graph_object
+        layout = go.Layout(showlegend=False, hovermode='closest',
                        scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting_z},
-                       uirevision=True
-                       )
-    
-    app = JupyterDash('SimpleExemple')
-    app.layout = html.Div([html.Div([html.H4("Сумма распределения зарядов"),
-                                     dcc.Graph(id='graph_distrib',
-                                               style={'height': '90vh'})
-                                     ], style={'display': 'inline-block', 'width': '30%'}),
-                           html.Div([html.H1("Граф дерева молнии",
-                                             style={'textAlign': 'center', 'color': 'gold'}),
-                                     dcc.Graph(id='graph_tree',
-                                               style={'height': '90vh'})
-                                     ], style={'display': 'inline-block', 'width': '70%'}),
-                           dcc.Interval(id='interval-component',
-                                        interval=interval*1000,
-                                        n_intervals=0)
-                           ])
-    
-    @app.callback(Output('graph_tree', 'figure'),
-                  Output('graph_distrib', 'figure'),
-                  Input('interval-component', 'n_intervals'))
-    def update_graph_live(n):
-        edges = openTree(filename)
-        # Разбор файла
-        df_edges, df_nodes = parseTreeToDF(edges)
-        # Выделение среза, если задана плоскость
-        df_edges, df_nodes = slice_selection(df_edges, df_nodes, place, value, Range)
-        # Сумма распределения зарядов в точке и чехле
-        distr_charges.append(sum_distribution(df_nodes))
+                       uirevision=True)
         
+        # Набор DataFrame'а для создания графа
+        array = []
+        for index, row in self.df_edge.iterrows():
+            array.append(row['from'])
+            array.append(row['to'])
+            array.append(None)
+        df_edges = pd.DataFrame({'id' : array}).merge(self.df_vertex[['id', 'x', 'y', 'z']], on='id', how='left')
+
         # Построение рёбер
-        edge_trace = go.Scatter3d(x=df_edges.x, y=df_edges.y, z=df_edges.z,
-                                line=dict(width=2, color=df_edges.color, colorscale=["darkslateblue", "crimson"], cmin=-1, cmax=1), 
-                                hoverinfo='none', 
-                                mode='lines'
-                                )
+        edge_trace = go.Scatter3d(x=df_edges.x, y=df_edges.y, z=df_edges.z, 
+                                  line=dict(width=2, colorscale=["darkslateblue", "crimson"], cmin=-1, cmax=1),
+                                  hoverinfo='none',
+                                  mode='lines')
         
         # Построение зарядов    
-        node_trace = go.Scatter3d(x=df_nodes.x, y=df_nodes.y, z=df_nodes.z,
-                                mode='markers',
-                                marker=dict(showscale=True,
-                                            colorscale=scale_nodes,
-                                            color=df_nodes.q,
-                                            cmin=-0.01,
-                                            cmax=0.01,
-                                            size=2.4,
-                                            ),
-                                line_width=.1
-                                )
-        
+        node_trace = go.Scatter3d(x=self.df_vertex.x, y=self.df_vertex.y, z=self.df_vertex.z,
+                                  mode='markers',
+                                  marker=dict(showscale=True, colorscale=scale_nodes, color=self.df_vertex.q, cmin=-0.001, cmax=0.001, size=2.4),
+                                  line_width=.1)
+
         # Построение чехлов
-        case_trace = go.Scatter3d(x=df_nodes.x, y=df_nodes.y, z=df_nodes.z,
-                                mode='markers',
-                                text = df_nodes.q,
-                                customdata= df_nodes.Q,
-                                hovertemplate='q= %{customdata} <br>Q= %{text}<extra></extra>',
-                                marker=dict(showscale=False,
-                                            colorscale=scale_case,
-                                            color=df_nodes.Q,
-                                            cmin=-0.0001,
-                                            cmax=0.0001,
-                                            size=24
-                                            ),
-                                line_width=1,
-                                opacity=0.1
-                                )       
-        # print(tuple(distr_charges[-1].sum_q))
+        case_trace = go.Scatter3d(x=self.df_vertex.x, y=self.df_vertex.y, z=self.df_vertex.z,
+                                  mode='markers',
+                                  marker=dict(showscale=False, colorscale=scale_case, color=self.df_vertex.Q, cmin=-0.000001, cmax=0.000001, size=24),
+                                  text = self.df_vertex.q,
+                                  customdata= self.df_vertex.Q,
+                                  hovertemplate='q= %{text} <br>Q= %{customdata}<extra></extra>',
+                                  line_width=1,
+                                  opacity=0.1)
+        
         data = [edge_trace, node_trace, case_trace]
-        data2 = [go.Scatter(x=distr_charges[-1].sum_q, y=distr_charges[-1].z, mode='lines+markers', name='Сумма q'),
-                go.Scatter(x=distr_charges[-1].sum_Q, y=distr_charges[-1].z, mode='lines+markers', name='Сумма Q')]
-
-        fig = go.Figure(data=data, layout=layout)
-        fig2 = go.Figure(data=data2, layout={'uirevision': 'True'})
-        
-        return fig, fig2
-                                             
-
-    app.run_server(mode=mode)  # inline - внутри jupyter; external - в браузере
-
-def open_file(filename):
-    result = pd.DataFrame()
-    if "history" in filename:
-        with open(filename, 'r') as file:
-            for line in file:
-                array = (line.rstrip()).split(" ")
-                temp = pd.DataFrame({array[0] : array[1:]})
-                result = pd.concat([result, temp], axis=1)
-                result = result.astype('float')
-                
-    else :
-        result = pd.read_csv(filename, delim_whitespace=True)
-    return result
-
-
-class Result:
-    def __init__(self, folder):
-        self.df_vertex = open_file(folder+'/vertex_table.txt')
-
-        self.df_vertex["new_id"] = self.df_vertex.index
-        self.df_vertex.set_index('id', inplace=True)
-        self.df_edge = open_file(folder+'/edge_table.txt')
-        
-        self.df_q_history = open_file(folder+'/q_history.txt')
-        self.df_Q_history = open_file(folder+'/Q_history.txt')
-        
-        
-        self.df_edge = self.df_edge.apply(lambda row: {\
-            "id" : row['id'] ,"from" : self.df_vertex.loc[row["from"], "new_id"],\
-                 "to" : self.df_vertex.loc[row["to"], "new_id"]\
-                    },\
-                         axis=1, result_type="expand")
-        self.df_Q_history.columns = [self.df_vertex.loc[col, "new_id"] for col in self.df_Q_history.columns]
-        self.df_q_history.columns = [self.df_vertex.loc[col, "new_id"] for col in self.df_q_history.columns]
-        self.df_vertex.set_index('new_id', inplace=True)
-
-    def save_history(self):
-        for column in self.df_q_history.columns:
-            y = self.df_q_history[column].dropna()
-            x = np.linspace(0, len(y), len(y))
-
-            # x = np.linspace(start=0, stop=len(col) - 1, num=min(1000, len(col)))
-            # y = [self.df_q_history[column].dropna().loc[int(coord)] for coord in x]
-            plt.plot(x, y)
-            plt.title(f"q: Vertex No. {column}")
-            plt.xlabel("Iter No.")
-            plt.ylabel("Charge (q), кл")
-            plt.savefig(f"images/q{column}.pdf")
-            plt.close()
-        
-        for column in self.df_Q_history.columns:
-            y = self.df_Q_history[column].dropna()
-            x = np.linspace(start=0, stop=y.shape[0], num=y.shape[0])
-            plt.plot(x, y)
-            plt.title(f"Q: Vertex No. {column}")
-            plt.xlabel("Iter No.")
-            plt.ylabel("Charge (Q), кл")
-            plt.savefig(f"images/Q{column}.pdf")
-            plt.close()
-
-    def plot_tree(self):
-        ax = plt.figure().add_subplot(projection='3d')
-        for _, row in self.df_edge.iterrows():
-            
-            fr = row['from']
-            to = row['to']
-            edge_x = [self.df_vertex.loc[fr, 'x'], self.df_vertex.loc[to, 'x']]
-            edge_y = [self.df_vertex.loc[fr, 'y'], self.df_vertex.loc[to, 'y']]
-            edge_z = [self.df_vertex.loc[fr, 'z'], self.df_vertex.loc[to, 'z']]
-            ax.plot(edge_x, edge_y, edge_z)
-
-        for id, row in self.df_vertex.iterrows():
-            ax.text(row['x'], row['y'], row['z'], str(id))
-            
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        
-        plt.savefig("tree.pdf")
-        plt.show()
-
-        
-        
-
-
-
-
-        
+        result = go.Figure(data=data, layout=layout)
+        return result
     
+    # Метод для запуска Dash-приложения
+    def run(self):
+        # Создание Dash-приложения
+        app = JupyterDash('SimpleExemple')
+
+        # Настройка и запуск Dash-приложения
+        app.layout = html.Div([html.Div([html.H4("Сумма распределения зарядов"),
+                                        dcc.Graph(figure=(self.plot('mean')),
+                                                style={'height': '90vh'})
+                                        ], style={'display': 'inline-block', 'width': '30%'}),
+                            html.Div([html.H1("Граф дерева молнии",
+                                                style={'textAlign': 'center', 'color': 'gold'}),
+                                        dcc.Graph(figure=(self.plot_tree()),
+                                                style={'height': '90vh'})
+                                        ], style={'display': 'inline-block', 'width': '70%'})])
+        app.run_server(mode='external')  # inline - внутри jupyter; external - в браузере
 
 
 def main():
-    # edges = openTree("LightningTree.txt")
-    # map3d_tree_plotly("LightningTree.txt")#, "xz", Range=[-100, 0])
-    # vertex = open_file("LightningTree data\\vertex_table.txt")
-    # Q_history = open_file("data/Q_history.txt")
-    res = Result("data")
-    res.save_history()
-    res.plot_tree()
-    
+    lt = LightningTree("LightningTree_data")
+    lt.run()
+    # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q').values)
 
 
 if __name__ == '__main__':
