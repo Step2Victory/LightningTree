@@ -1,5 +1,6 @@
 #include "Vector.h"
 #include "cmath"
+#include <string>
 
 double Vector::x() const
 {
