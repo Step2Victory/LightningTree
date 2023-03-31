@@ -35,6 +35,13 @@ public:
         return (1 + std::erf((r.z() - a) / (std::sqrt(2) * sigma))) * mult;
         // return 0.5 * (1 + std::erf((r.data[2] - a) / (std::sqrt(2) * sigma)));
     }
+    void DeduceMult(double E_plus, double h)
+    {
+
+        double E = (getValue(Vector{0,0,a + h}) - getValue(Vector{0,0,a})) / h;
+        double d = 4 * E_plus / E;
+        mult *= d;
+    }
 };
 
 class ChargeField : public ExternalField

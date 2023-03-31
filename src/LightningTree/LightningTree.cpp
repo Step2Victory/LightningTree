@@ -26,12 +26,12 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     if (E > E_plus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 2))) > probability;
+        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 1))) > probability;
     }
     else if (-E > E_minus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 2))) > probability;
+        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 1))) > probability;
     }
     
     return false;
@@ -73,17 +73,20 @@ void LightningTree::NextIterEdges() // count new edges using dis
                             find_in_point = true;
                             new_vertex = *charge_in_point;
                         }
-                        if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
+                        if (graph[vertex].size() < 3)
                         {
-                            edges.insert(edge);
-                            graph[vertex].push_back(edge);
-                            if (!find_in_point)
+                            if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
                             {
-                                vertices.insert(new_vertex);
+                                edges.insert(edge);
+                                graph[vertex].push_back(edge);
+                                if (!find_in_point)
+                                {
+                                    vertices.insert(new_vertex);
+                                }
+                                DeleteFromPerephery(vertex);
+                                new_graph[new_vertex].push_back(edge);
+                                peripheral[new_vertex] = 0;    
                             }
-                            DeleteFromPerephery(vertex);
-                            new_graph[new_vertex].push_back(edge);
-                            peripheral[new_vertex] = 0;    
                         }
                     }
                 }

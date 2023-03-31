@@ -3,7 +3,7 @@
 #include <cmath>
 #include <random>
 #include <utility>
-#include "AbstractTree.h"
+#include "../AbstractTree/AbstractTree.h"
 
 class LightningTree : public AbstractTree
 {

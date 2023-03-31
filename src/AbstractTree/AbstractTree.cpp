@@ -30,6 +30,7 @@ void AbstractTree::Memorize()
 double AbstractTree::ElectricFieldAlongEdge(EdgePtr edge) // реализация формулы (7) из Leaders.pdf
 {
     double l = Abs(edge->from->point - edge->to->point);
+    // double l = h;
     double phi_1 = Potential(vertices, edge->from->point, h) + ShealthPotential(vertices, edge->from->point, R) + phi_a->getValue(edge->from->point); // формула (6)
     double phi_2 = Potential(vertices, edge->to->point, h) + ShealthPotential(vertices, edge->to->point,  R) + phi_a->getValue(edge->to->point);
     return (phi_1 - phi_2) / l;
