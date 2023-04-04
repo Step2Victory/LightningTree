@@ -4,7 +4,7 @@ import math
 
 from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
-from dash import dcc, html
+from dash import dcc, html, Output, Input
 
 # from dash.dependencies import Output, Input
 
@@ -31,6 +31,7 @@ class Vector(object):
 
 class LightningTree(object):
     def __init__ (self, folder):
+        self.folder = folder
         self.df_vertex = self.open_file(folder+'/vertex_table.txt')
         self.df_edge = self.open_file(folder+'/edge_table.txt')
         # self.df_q_history = self.open_file(folder+'/q_history_1.txt')
@@ -70,13 +71,14 @@ class LightningTree(object):
         groupby: Заголовок столбца по которому будет происходит группировка
         operation: Групповая операция по данным (sum, min, max, mean, ...)
         colomn: Заголовок столбца для которого будет осуществляться операция
-        return: Данные с одной колонкой.
+        return: Сортированные по столбцу данные с распределением значений.
         """
-        # Приведение в нормальный вид с 2я колонками???
-        return df.groupby([groupby]).agg({colomn:[operarion]})
+        # return df.groupby([groupby]).agg({colomn:[operarion]})
+        result = df.groupby([groupby]).agg({colomn:[operarion]})
+        return pd.DataFrame({groupby : result.index.values[::-1], operarion+' '+colomn : result.values[::-1].ravel()})
     
 
-    def fi_def(self, df:pd.DataFrame, charge:str) -> pd.DataFrame:
+    def fi_def(self, df:pd.DataFrame) -> pd.DataFrame:
         """
         Метод расчёта потенциала по столбцу
         
@@ -84,36 +86,34 @@ class LightningTree(object):
         ---------
         df: Данные для обработки
         charge: заряд в вершине графа или в чехле ('q', 'Q')
-        return: Распределение заряда по высоте
+        return: Сортированные по высоте данные с распределением потенциала
         """
-        # fi = {}
-        # for height in range(df.z.min(), df.z.max(), 10):
-        #     for i, row in df.iterrows():
-        #         if row.y == 0 and row.x == 0 and height == row.z:
-        #             fi[height] += k * row[charge] * (1 / (((0 - row.x) ** 2 +
-        #                                         (0 - row.y) ** 2 +
-        #                                         (height - 0.001 - row.z) ** 2) ** 0.5)
-        #                                 - 1 / (((0 - row.x) ** 2 +
-        #                                         (0 - row.y) ** 2 +
-        #                                         (height - 0.001 + row.z) ** 2) ** 0.5))
-        #         else:
-        #             fi[height] += k * row[charge] * (1 / (((0 - row.x) ** 2 +
-        #                                         (0 - row.y) ** 2 +
-        #                                         (height - row.z) ** 2) ** 0.5)
-        #                                 - 1 / (((0 - row.x) ** 2 +
-        #                                         (0 - row.y) ** 2 +
-        #                                         (height + row.z) ** 2) ** 0.5))
-        fi = pd.DataFrame()          
-        for i, row in df.iterrows():
-            fi[i] = df['z'].apply(lambda h: k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius() + 15) - 
-                                                                   1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
-                                                if row.y == 0 and row.x == 0 and h == row.z else
-                                                k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()) - 
-                                                                   1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
-                                    )
-        result = pd.DataFrame(df.z)
-        result['fi'] = fi.sum(axis=1)
-        return self.distribution(result,'z', 'mean', 'fi')
+        fi_list = []
+        step = 10
+        for h in range(df.z.min(), df.z.max()+step, step):
+            fi = 0
+            for index, row in df.iterrows():
+                if row.y == 0 and row.x == 0 and h == row.z:
+                    fi += k * (row['q'] + row['Q']) * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()+step/2)
+                                        - 1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()+step/2))
+                else:
+                    fi += k * (row['q'] + row['Q']) * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius())
+                                        - 1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
+            fi_list.append([h, fi])
+        
+        result = pd.DataFrame(fi_list, columns=['z', 'fi'])
+        return result
+        # fi = pd.DataFrame()          
+        # for i, row in df.iterrows():
+        #     fi[i] = df['z'].apply(lambda h: k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()+5) - 
+        #                                                            1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()+5))
+        #                                         if row.y == 0 and row.x == 0 and h == row.z else
+        #                                         k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()) - 
+        #                                                            1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
+        #                             )
+        # result = pd.DataFrame(df.z)
+        # result['fi'] = fi.sum(axis=1)
+        # return self.distribution(result,'z', 'mean', 'fi')
 
 
     def plot(self, list_df:list[pd.DataFrame]) -> go.Figure:
@@ -127,10 +127,10 @@ class LightningTree(object):
         """
         fig = make_subplots(rows=1, cols=len(list_df), shared_yaxes=True, horizontal_spacing=0.02)
         for i in range(len(list_df)):
-            fig.add_trace(go.Scatter(x=list_df[i].values[::-1].ravel(),
-                                    y=list_df[i].index.values[::-1], 
+            fig.add_trace(go.Scatter(x=list_df[i][list_df[i].columns[1]],
+                                    y=list_df[i][list_df[i].columns[0]], 
                                     mode='lines+markers', 
-                                    name=list_df[i].columns.values[0][1] + ' ' + list_df[i].columns.values[0][0]), 
+                                    name=list_df[i].columns[1]), 
                             row=1, col=i+1)
         
         fig.update_layout(uirevision=True)
@@ -148,7 +148,9 @@ class LightningTree(object):
     def plot_tree(self) -> go.Figure:
         """
         Создание 3D графа дерева молнии
-
+        
+        Parametrs
+        ---------
         return: Графический объект
         """
         # Настройки для отображения графиков
@@ -197,53 +199,137 @@ class LightningTree(object):
         return result
     
 
-    def run(self):
+    def run(self, mode:str='external', interval:int=0):
         """
         Метод для запуска Dash-приложения
+
+        Parametrs
+        ---------
+        mode: Параметр запуска (inline - внутри jupyter; external - в браузере)
+        interval: интервал обновления в секундах
         """
         # Создание Dash-приложения
         app = JupyterDash('SimpleExemple')
 
         # Настройка и запуск Dash-приложения
-        app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+
+        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+                            #    html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
+                            #              dcc.Graph(figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                            #                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
+                            #                        style={'height': '90vh'})],
+                            #            style={'display': 'inline-block', 'width': '40%'}),
+                            #    html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+                            #             dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
+                            #            style={'display': 'inline-block', 'width': '60%'})])
+        
+        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+                            #    html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
+                            #              dcc.Graph(figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                            #                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                            #                                           self.fi_def(self.df_vertex)])),
+                            #                        style={'height': '90vh'})],
+                            #            style={'display': 'inline-block', 'width': '40%'}),
+                            #    html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+                            #             dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
+                            #            style={'display': 'inline-block', 'width': '60%'})])
+        if interval == 0:
+            app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+                                    
+                                    html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
+                                                
+                                                dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum'}, 
+                                                            {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg'},
+                                                            {'label': "Распределение потенциала по высоте", 'value':'fi'},
+                                                            {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
+
+                                                dcc.Graph(id='graph_distrib',
+                                                    #    figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                                                    #                       self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                                    #                       self.fi_def(self.df_vertex)])),
+                                                        style={'height': '90vh'})],
+                                                        style={'display': 'inline-block', 'width': '39%'}),
+
+                                    html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+                                                
+                                            dcc.Graph(figure=(self.plot_tree()), id='graph_tree', style={'height': '90vh'})],
+
+                                            style={'display': 'inline-block', 'width': '59%'})])
+        else:
+            app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+                               
+                               dcc.Interval(id='interval-component', interval=interval*1000, n_intervals=0),
+
                                html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-                                         dcc.Graph(figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
-                                                                      self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
+                                         
+                                         dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum'}, 
+                                                       {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg'},
+                                                       {'label': "Распределение потенциала по высоте", 'value':'fi'},
+                                                       {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
+
+                                         dcc.Graph(id='graph_distrib',
+                                                #    figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                                                #                       self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                                #                       self.fi_def(self.df_vertex)])),
+
                                                    style={'height': '90vh'})],
-                                       style={'display': 'inline-block', 'width': '30%'}),
+                                                   style={'display': 'inline-block', 'width': '39%'}),
+
                                html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-                                        dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
-                                       style={'display': 'inline-block', 'width': '70%'})])
+                                         
+                                        dcc.Graph(figure=(self.plot_tree()), id='graph_tree', style={'height': '90vh'})],
+
+                                        style={'display': 'inline-block', 'width': '59%'})])
+
+    
+
         
-        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
-        #                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-        #                                  dcc.Graph(figure=(self.plot([self.fi_def(self.df_vertex, 'q'), 
-        #                                                               self.fi_def(self.df_vertex, 'Q'),
-        #                                                               self.distribution(self.df_vertex, 'z', 'sum', 'q'),
-        #                                                               self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
-        #                                            style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '50%'}),
-        #                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-        #                                 dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '50%'})])
+        @app.callback(Output('graph_distrib', 'figure'),
+                      [Input('dropdown', 'value')])
+        def update_figure(value):
+            match value:
+                case 'sum':
+                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                                     self.distribution(self.df_vertex, 'z', 'sum', 'Q')])
+                case 'avg':
+                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                                     self.distribution(self.df_vertex, 'z', 'mean', 'Q')])
+                case 'fi':
+                    figure = self.plot([self.fi_def(self.df_vertex)])
+                case 'all':
+                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                           self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                                           self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
+                                           self.fi_def(self.df_vertex)])
+                case _:
+                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                           self.fi_def(self.df_vertex)])
+
+            return figure
         
+
+        @app.callback(Output('graph_tree', 'figure'),
+                      Input('interval-component', 'n_intervals'))
+        def update_graph_live(n):
+
+            self.df_vertex = self.open_file(self.folder + '/vertex_table.txt')
+            self.df_edge = self.open_file(self.folder + '/edge_table.txt')
+
+            fig = self.plot_tree()
+
+            return fig
         
-        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
-        #                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-        #                                  dcc.Graph(figure=self.plot_two(self.distribution(self.df_vertex, 'z', 'sum', 'q'), self.distribution(self.df_vertex, 'z', 'sum', 'Q')),
-        #                                            style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '20%'}),
-        #                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-        #                                 dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '80%'})])
-        app.run_server(mode='external')  # inline - внутри jupyter; external - в браузер
+        app.run_server(mode=mode)
 
 
 def main():
     lt = LightningTree("LightningTree_data")
     lt.run()
-    # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q').columns.values[0][0])
-    # print(lt.fi_def(lt.df_vertex, 'q'))
+    # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'))
+    # print(lt.fi_def(lt.df_vertex))
+    # print(lt.df_vertex.z.sort_values()[::-1].unique())
     
 
 
