@@ -1,4 +1,5 @@
 #include "LightningTree.h"
+#include "RandomEdgeIterator.h"
 
 
 std::mt19937 gen(42);
@@ -21,18 +22,31 @@ bool LightningTree::MakeEdge(EdgePtr edge)
 {
     double probability = dis(gen);
     double E = ElectricFieldAlongEdge(edge);
-    
+    VertexPtr start_vertex = edge->from;
+
+    double mult = std::pow(2, std::max(static_cast<int>(graph[start_vertex].size() - 1), 0));
+    // E /= mult;
     // реализация формулы (12) из Leaders.pdf
     if (E > E_plus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 1))) > probability;
+        return (1 - std::exp(-std::pow((std::abs(E - E_plus) / E_plus), 1))) > probability;
     }
-    else if (-E > E_minus)
+    else if (E < E_minus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 1))) > probability;
+        return (1 - std::exp(-std::pow((std::abs(-E - E_minus) / E_minus), 1))) > probability;
     }
+    // if (E > 0)
+    // {
+    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    //     return (1 - std::exp(-std::pow(((E)/ E_plus), 1))) > probability;
+    // }
+    // else if (E < 0)
+    // {
+    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    //     return (1 - std::exp(-std::pow(((-E)/ E_minus), 1))) > probability;
+    // }
     
     return false;
 }
@@ -47,49 +61,46 @@ bool LightningTree::IsAbleToGrow(VertexPtr vertex)
 void LightningTree::NextIterEdges() // count new edges using dis
 {
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> new_graph;
-    for (auto elem : graph)
+    for (auto& elem : graph)
     {
         VertexPtr vertex = elem.first;
+        if (graph.find(vertex) == graph.end())
+        {
+            std::cout << 'A';
+        }
         // std::vector<EdgePtr> edges_in_current_elem = elem.second;
         if (IsAbleToGrow(vertex))
         {
-        
-            for (int i = -1; i < 2; ++i)
+            for (auto [i, j, k] : RandomPointGenerator())
             {
-                for (int j = -1; j < 2; ++j)
+                bool find_in_point = false;
+                Vector point = vertex->point + Vector{i * h, j * h, k * h};
+                if (FindInTree(point))
                 {
-                    for (int k = -1; k < 2; ++k)
+                    continue;
+                }
+                auto new_vertex = CreateChargeInPoint(point);
+                if (auto charge_in_point = FindChargeInPoint(point); charge_in_point.has_value())
+                {
+                    find_in_point = true;
+                    new_vertex = *charge_in_point;
+                }
+                if (graph[vertex].size() < 3)
+                {
+                     if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
                     {
-                        
-                        bool find_in_point = false;
-                        Vector point = vertex->point + Vector{i * h, j * h, k * h};
-                        if (FindInTree(point))
-                        {
-                            continue;
-                        }
-                        auto new_vertex = CreateChargeInPoint(point);
-                        if (auto charge_in_point = FindChargeInPoint(point); charge_in_point.has_value())
-                        {
-                            find_in_point = true;
-                            new_vertex = *charge_in_point;
-                        }
-                        if (graph[vertex].size() < 3)
-                        {
-                            if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
-                            {
-                                edges.insert(edge);
-                                graph[vertex].push_back(edge);
-                                if (!find_in_point)
-                                {
-                                    vertices.insert(new_vertex);
-                                }
-                                DeleteFromPerephery(vertex);
-                                new_graph[new_vertex].push_back(edge);
-                                peripheral[new_vertex] = 0;    
-                            }
-                        }
+                         edges.insert(edge);
+                         graph[vertex].push_back(edge);
+                         if (!find_in_point)
+                         {
+                             vertices.insert(new_vertex);
+                         }
+                         DeleteFromPerephery(vertex);
+                         new_graph[new_vertex].push_back(edge);
+                         peripheral[new_vertex] = 0;
                     }
                 }
+                    
             }
         }
     }

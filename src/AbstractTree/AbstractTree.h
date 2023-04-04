@@ -75,7 +75,7 @@ public:
     
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 
-    void ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history);
+    void ReturnFiles(const std::filesystem::path& table_vertex, const std::filesystem::path& table_edges, const std::filesystem::path& table_q_history, const std::filesystem::path& table_Q_history);
    
 
     inline virtual ~AbstractTree() {};

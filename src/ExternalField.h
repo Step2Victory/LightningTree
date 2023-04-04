@@ -39,7 +39,7 @@ public:
     {
 
         double E = (getValue(Vector{0,0,a + h}) - getValue(Vector{0,0,a})) / h;
-        double d = 4 * E_plus / E;
+        double d = 3 * E_plus / E;
         mult *= d;
     }
 };

@@ -118,7 +118,7 @@ void AbstractTree::DeletePeripheral() // delete peripherical edges
             to_delete.push_back(elem.first);
         }
     }
-    for (auto elem: to_delete)
+    for (auto& elem: to_delete)
     {
         peripheral.erase(elem);
         DeleteCharge(elem);
@@ -229,7 +229,7 @@ void AbstractTree::Info()
     std::cout << '\n';
 }
 
-void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history)
+void AbstractTree::ReturnFiles(const std::filesystem::path& table_vertex, const std::filesystem::path& table_edges, const std::filesystem::path& table_q_history, const std::filesystem::path& table_Q_history)
 {
     std::ofstream fout(table_vertex);
     fout << "id" << ' ' << 'q' << ' ' << 'Q' << ' ' << 'x' << ' ' << 'y' << ' ' << 'z' << '\n';

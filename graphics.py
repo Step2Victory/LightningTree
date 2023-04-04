@@ -137,6 +137,14 @@ class LightningTree(object):
         return fig
 
 
+    def plot_two(self, df_q, df_Q):
+        data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
+                           mode='lines+markers', name='sum' + ' q'),
+                go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
+                           mode='lines+markers', name='sum' + ' Q')]
+        fig = go.Figure(data=data, layout={'uirevision': 'True'})
+        return fig
+
     def plot_tree(self) -> go.Figure:
         """
         Создание 3D графа дерева молнии
@@ -263,6 +271,7 @@ class LightningTree(object):
                                                 #    figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
                                                 #                       self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
                                                 #                       self.fi_def(self.df_vertex)])),
+
                                                    style={'height': '90vh'})],
                                                    style={'display': 'inline-block', 'width': '39%'}),
 
