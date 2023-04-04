@@ -105,8 +105,8 @@ class LightningTree(object):
         #                                         (height + row.z) ** 2) ** 0.5))
         fi = pd.DataFrame()          
         for i, row in df.iterrows():
-            fi[i] = df['z'].apply(lambda h: k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-0.001-row.z]).radius()) - 
-                                                                   1 / (Vector([0-row.x, 0 - row.y, h-0.001+row.z]).radius()))
+            fi[i] = df['z'].apply(lambda h: k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius() + 15) - 
+                                                                   1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
                                                 if row.y == 0 and row.x == 0 and h == row.z else
                                                 k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()) - 
                                                                    1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
@@ -136,6 +136,14 @@ class LightningTree(object):
         fig.update_layout(uirevision=True)
         return fig
 
+
+    def plot_two(self, df_q, df_Q):
+        data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
+                           mode='lines+markers', name='sum' + ' q'),
+                go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
+                           mode='lines+markers', name='sum' + ' Q')]
+        fig = go.Figure(data=data, layout={'uirevision': 'True'})
+        return fig
 
     def plot_tree(self) -> go.Figure:
         """
@@ -197,27 +205,38 @@ class LightningTree(object):
         app = JupyterDash('SimpleExemple')
 
         # Настройка и запуск Dash-приложения
-        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
-        #                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-        #                                  dcc.Graph(figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
-        #                                                               self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
-        #                                            style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '30%'}),
-        #                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-        #                                 dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
-        #                                style={'display': 'inline-block', 'width': '70%'})])
-        
         app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
                                html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-                                         dcc.Graph(figure=(self.plot([self.fi_def(self.df_vertex, 'q'), 
-                                                                      self.fi_def(self.df_vertex, 'Q')])),
+                                         dcc.Graph(figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                                                                      self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
                                                    style={'height': '90vh'})],
                                        style={'display': 'inline-block', 'width': '30%'}),
                                html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
                                         dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
                                        style={'display': 'inline-block', 'width': '70%'})])
-
-        app.run_server(mode='external')  # inline - внутри jupyter; external - в браузере
+        
+        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+        #                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
+        #                                  dcc.Graph(figure=(self.plot([self.fi_def(self.df_vertex, 'q'), 
+        #                                                               self.fi_def(self.df_vertex, 'Q'),
+        #                                                               self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+        #                                                               self.distribution(self.df_vertex, 'z', 'sum', 'Q')])),
+        #                                            style={'height': '90vh'})],
+        #                                style={'display': 'inline-block', 'width': '50%'}),
+        #                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+        #                                 dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
+        #                                style={'display': 'inline-block', 'width': '50%'})])
+        
+        
+        # app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+        #                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
+        #                                  dcc.Graph(figure=self.plot_two(self.distribution(self.df_vertex, 'z', 'sum', 'q'), self.distribution(self.df_vertex, 'z', 'sum', 'Q')),
+        #                                            style={'height': '90vh'})],
+        #                                style={'display': 'inline-block', 'width': '20%'}),
+        #                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+        #                                 dcc.Graph(figure=(self.plot_tree()), style={'height': '90vh'})],
+        #                                style={'display': 'inline-block', 'width': '80%'})])
+        app.run_server(mode='external')  # inline - внутри jupyter; external - в браузер
 
 
 def main():
