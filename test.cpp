@@ -71,13 +71,26 @@ void GenerateSessions()
 int main(){
     // auto field = std::make_shared<ConstField>(300000);
     
-
-    double h = 30, E_plus = 150000;
-    auto field = std::make_shared<NormalField>(2000, 8000, 335'000'000);
-    field->DeduceMult(E_plus, h);
+    
+    double h = 200, E_plus = 150000;
+    double start_x = -5 * h;
+    double end_x = 5 * h;
+    double start_y = -5 * h;
+    double end_y = 5 * h;
+    double start_z = 8000 - 20 * h;
+    double end_z = 8000 + 20 * h;
+    std::vector layers = {
+        ChargeLayer{.p_0 = 0.000001, .h = h, .L = 200, .r=Vector{0, 0, 8000}, .a=1},
+        ChargeLayer{.p_0 = 0.000001, .h = h, .L = 200, .r=Vector{0, 0, 10000}, .a=1}};
+    auto start = std::chrono::system_clock::now();
+    auto field = std::make_shared<TableField>(layers, start_x, start_y, start_z, end_x, end_y, end_z, h);
+    auto end = std::chrono::system_clock::now();
+    std::cout << "External field preprocessing time " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "s" << std::endl;
+    // auto field = std::make_shared<NormalField>(2000, 8000, 335'000'000);
+    // field->DeduceMult(E_plus, h);
     std::shared_ptr<ExternalField> ef = field;
     auto lt =  LTBuilder()
-                    .SetPeripheralLayers(220)
+                    .SetPeripheralLayers(1000)
                     .SetResistance(1)
                     .SetExternalField(ef)
                     .SetEPlus(E_plus)
@@ -86,7 +99,7 @@ int main(){
                     .SetEb(3000000)
                     .SetSigma(1)
                     .SetH(h)
-                    .Setr(h / 1000)
+                    .Setr(h / 100)
                     .SetR(h)
                     .SetEdge(std::make_shared<Vertex>(Vector{0, 0, 8000.0}, 0, 0), std::make_shared<Vertex>(Vector{0, 0, 8000 + h}, 0, 0))
                     .CountDeltat()
@@ -94,50 +107,31 @@ int main(){
                     .CountQs()
                     .CreateLightningTree<LightningTree>();
     
-    
-    // auto ltb =  LTBuilder()
-    //             .SetPeripheralLayers(1000000)
-    //             .SetResistance(1)
-    //             .SetExternalField(ef)
-    //             .SetEPlus(E_plus)
-    //             .SetEMinus(2 * E_plus)
-    //             .SetE0(100000)
-    //             .SetEb(3000000)
-    //             .SetSigma(1)
-    //             .SetH(h)
-    //             .Setr(h / 100)
-    //             .SetR(h)
-    //             .CountDeltat()
-    //             .Countqmax()
-    //             .CountQs();
-    //             // .CreateLightningTree<TestTree>();
 
-    // auto k = 6;
-    // std::vector<VertexPtr> vertices(k);
-    // for (size_t i = 0; i < k; ++i)
-    // {
-    //     vertices[i] = std::make_shared<Vertex>(Vector{0, 0, 8000.0 + i * h}, 0, 0);
-    // }
-    // for (size_t i = 1; i < k; ++i)
-    // {
-    //     ltb.SetEdge(vertices[i - 1], vertices[i]);
-    // }
-    // auto lt = ltb.CreateLightningTree<TestTree>();
 
     // GenerateSessions();
-    int n_iter = 2000;
-    auto start = std::chrono::system_clock::now();
+    int n_iter = 5000;
+    start = std::chrono::system_clock::now();
     lt->ParamsInfo();
     for (int i = 0; i < n_iter; ++i)
     {
-        lt->NextIter();
+        try
+        {
+            lt->NextIter();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            break;
+        }
         lt->Info();
         // lt->ReturnFiles(path_data + "/vertex_table.txt", path_data + "/edge_table.txt", path_data + "/q_history_1.txt", path_data + "/Q_history.txt");
     }
-    auto end = std::chrono::system_clock::now();
+    end = std::chrono::system_clock::now();
     std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
     lt->Info();
     // // PrintCurrentState(*lt);
-    // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
+    lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
+    lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
     return 0;
 }

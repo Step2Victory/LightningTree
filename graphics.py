@@ -34,6 +34,22 @@ class LightningTree(object):
         self.folder = folder
         self.df_vertex = self.open_file(folder+'/vertex_table.txt')
         self.df_edge = self.open_file(folder+'/edge_table.txt')
+        self.df_phi_info = self.open_file(folder+'/phi_info.txt')
+
+        def get_middle_edge(row):
+            """
+            Возвращает середину ребра
+            
+            Parametrs
+            ---------
+            row: Строка из датафрейма ребер
+            return: середину ребра, заданного в строке row
+            """
+            from_id = row['from']
+            to_id = row['to']
+            return (self.df_vertex[self.df_vertex['id'] == from_id]['z'].item() + self.df_vertex[self.df_vertex['id'] == to_id]['z'].item()) / 2
+        
+        self.df_edge['z'] = self.df_edge.apply(get_middle_edge, axis=1)
         # self.df_q_history = self.open_file(folder+'/q_history_1.txt')
         # self.df_Q_history = self.open_file(folder+'/Q_history.txt')
 
@@ -240,8 +256,10 @@ class LightningTree(object):
                                                 
                                                 dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum'}, 
                                                             {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg'},
-                                                            {'label': "Распределение потенциала по высоте", 'value':'fi'},
-                                                            {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
+                                                       {'label': "Распределение полного потенциала по высоте", 'value':'full_phi'},
+                                                       {'label': "Распределение потенциала внешнего поля по высоте", 'value':'ext_phi'},
+                                                       {'label': "Распределение токов по высоте", "value" : "current"},
+                                                       {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
 
                                                 dcc.Graph(id='graph_distrib',
                                                     #    figure=(self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
@@ -264,7 +282,9 @@ class LightningTree(object):
                                          
                                          dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum'}, 
                                                        {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg'},
-                                                       {'label': "Распределение потенциала по высоте", 'value':'fi'},
+                                                       {'label': "Распределение полного потенциала по высоте", 'value':'full_phi'},
+                                                       {'label': "Распределение потенциала внешнего поля по высоте", 'value':'ext_phi'},
+                                                       {'label': "Распределение токов по высоте", "value" : "current"},
                                                        {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
 
                                          dcc.Graph(id='graph_distrib',
@@ -283,31 +303,48 @@ class LightningTree(object):
 
     
 
+
+        figures = {
+            "sum" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                                self.distribution(self.df_vertex, 'z', 'sum', 'Q')]),
+            "avg" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                                     self.distribution(self.df_vertex, 'z', 'mean', 'Q')]),
+            'full_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi')]),
+            'ext_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
+            
+            'current' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current')]),
+            'all' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                           self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                                           self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
+                                           self.distribution(self.df_vertex, 'z', 'mean', 'phi')]),
+            
+        }
         
         @app.callback(Output('graph_distrib', 'figure'),
                       [Input('dropdown', 'value')])
         def update_figure(value):
-            match value:
-                case 'sum':
-                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
-                                     self.distribution(self.df_vertex, 'z', 'sum', 'Q')])
-                case 'avg':
-                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
-                                     self.distribution(self.df_vertex, 'z', 'mean', 'Q')])
-                case 'fi':
-                    figure = self.plot([self.fi_def(self.df_vertex)])
-                case 'all':
-                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
-                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
-                                           self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
-                                           self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
-                                           self.fi_def(self.df_vertex)])
-                case _:
-                    figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
-                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
-                                           self.fi_def(self.df_vertex)])
+            # match value:
+                # case 'sum':
+                #     figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+                #                      self.distribution(self.df_vertex, 'z', 'sum', 'Q')])
+                # case 'avg':
+                #     figure = self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                #                      self.distribution(self.df_vertex, 'z', 'mean', 'Q')])
+                # case 'fi':
+                #     figure = self.plot([self.fi_def(self.df_vertex)])
+                # case 'all':
+                #     figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                #                            self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                #                            self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+                #                            self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
+                #                            self.fi_def(self.df_vertex)])
+                # case _:
+                #     figure = self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                #                            self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                #                            self.fi_def(self.df_vertex)])
 
-            return figure
+            return figures[value]
         
 
         @app.callback(Output('graph_tree', 'figure'),

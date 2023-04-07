@@ -7,4 +7,3 @@ add_executable(LightningTree src/Vector.cpp src/AbstractTree/AbstractTree.cpp sr
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
