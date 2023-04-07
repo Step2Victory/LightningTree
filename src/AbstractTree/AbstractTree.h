@@ -4,11 +4,11 @@
 #include <unordered_set>
 #include <vector>
 #include <optional>
-#include "Vertex.h"
-#include "Edge.h"
-#include "ExternalField.h"
+#include "../Vertex.h"
+#include "../Edge.h"
+#include "../ExternalField.h"
 #include <fstream>
-#include "config.h"
+#include "../config.h"
 
 class AbstractTree
 {
@@ -75,34 +75,34 @@ public:
     
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> GetGraph() const; // возвращает копию текущего состояния графа
 
-    void ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history);
-   
+    void ReturnFiles(const std::filesystem::path& table_vertex, const std::filesystem::path& table_edges, const std::filesystem::path& table_q_history, const std::filesystem::path& table_Q_history);
+    void SavePhiInfo(const std::filesystem::path& phi_info, double start_x, double start_y, double start_z, double end_x, double end_y, double end_z);
 
     inline virtual ~AbstractTree() {};
 };
 
-template <class Tree>
-std::string TreeToString(const Tree& tree)
-{
-    std::string outtree = "";
-    //string outcharges;
-    for(auto elem: tree.GetGraph()){
-        ///outtree += "" + *elem.first ;
-        for(int i = 0; i < elem.second.size(); i++)
-        {
-            outtree += "" + elem.second[i]->from->tostring() + "; " + elem.second[i]->to->tostring() + "; " + std::to_string(elem.second[i]->sigma) + "\n";
-        }
-    }
+// template <class Tree>
+// std::string TreeToString(const Tree& tree)
+// {
+//     std::string outtree = "";
+//     //string outcharges;
+//     for(auto elem: tree.GetGraph()){
+//         ///outtree += "" + *elem.first ;
+//         for(int i = 0; i < elem.second.size(); i++)
+//         {
+//             outtree += "" + elem.second[i]->from->tostring() + "; " + elem.second[i]->to->tostring() + "; " + std::to_string(elem.second[i]->sigma) + "\n";
+//         }
+//     }
 
-    return outtree;
-}
+//     return outtree;
+// }
 
-template <class Tree>
-void WriteInFile(const Tree& tree)
-{
-    std::ofstream fout(path_data + "\\LightningTree.txt", std::ios_base::out);
-    fout << TreeToString(tree);
-    fout.close();
-}
+// template <class Tree>
+// void WriteInFile(const Tree& tree)
+// {
+//     std::ofstream fout(path_data + "/LightningTree.txt", std::ios_base::out);
+//     fout << TreeToString(tree);
+//     fout.close();
+// }
 
 

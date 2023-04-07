@@ -11,7 +11,7 @@ struct Vector
     double y() const;
     double z() const;
     Vector operator-=(const Vector& rhs);
-
+        
     Vector operator-(const Vector& rhs) const;
     Vector operator+=(const Vector& rhs);
 

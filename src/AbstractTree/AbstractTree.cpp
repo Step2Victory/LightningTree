@@ -30,6 +30,7 @@ void AbstractTree::Memorize()
 double AbstractTree::ElectricFieldAlongEdge(EdgePtr edge) // реализация формулы (7) из Leaders.pdf
 {
     double l = Abs(edge->from->point - edge->to->point);
+    // double l = h;
     double phi_1 = Potential(vertices, edge->from->point, h) + ShealthPotential(vertices, edge->from->point, R) + phi_a->getValue(edge->from->point); // формула (6)
     double phi_2 = Potential(vertices, edge->to->point, h) + ShealthPotential(vertices, edge->to->point,  R) + phi_a->getValue(edge->to->point);
     return (phi_1 - phi_2) / l;
@@ -117,7 +118,7 @@ void AbstractTree::DeletePeripheral() // delete peripherical edges
             to_delete.push_back(elem.first);
         }
     }
-    for (auto elem: to_delete)
+    for (auto& elem: to_delete)
     {
         peripheral.erase(elem);
         DeleteCharge(elem);
@@ -228,20 +229,20 @@ void AbstractTree::Info()
     std::cout << '\n';
 }
 
-void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::string& table_edges, const std::string& table_q_history, const std::string& table_Q_history)
+void AbstractTree::ReturnFiles(const std::filesystem::path& table_vertex, const std::filesystem::path& table_edges, const std::filesystem::path& table_q_history, const std::filesystem::path& table_Q_history)
 {
     std::ofstream fout(table_vertex);
-    fout << "id" << ' ' << 'q' << ' ' << 'Q' << ' ' << 'x' << ' ' << 'y' << ' ' << 'z' << '\n';
+    fout << "id" << ' ' << 'q' << ' ' << 'Q' << ' ' << 'x' << ' ' << 'y' << ' ' << 'z'  << ' ' << "phi" << '\n';
     for (auto& vertex: vertices)
     {
-        fout << vertex << ' ' << *vertex << '\n';
+        fout << vertex << ' ' << *vertex << ' ' <<  Potential(vertices, vertex->point, h) + ShealthPotential(vertices, vertex->point, R) + phi_a->getValue(vertex->point) << '\n';
     }
     fout.close();
     fout.open(table_edges);
-    fout << "id" << ' ' << "from" << ' ' << "to" << '\n';
+    fout << "id" << ' ' << "from" << ' ' << "to" << ' ' << "current" << '\n';
     for (auto edge: edges)
     {
-        fout << edge << ' ' << *edge << '\n';
+        fout << edge << ' ' << *edge << ' ' << CurrentAlongEdge(edge)<< '\n';
     }
     fout.close();
     fout.open(table_q_history);
@@ -267,4 +268,25 @@ void AbstractTree::ReturnFiles(const std::string& table_vertex, const std::strin
     }
     fout.close();
 
+}
+
+void AbstractTree::SavePhiInfo(const std::filesystem::path& phi_info, double start_x, double start_y, double start_z, double end_x, double end_y, double end_z)
+{
+    std::ofstream fout(phi_info);
+    fout << 'z' << ' ' <<"full_phi" << ' ' << "ext_phi" << '\n';
+    for (double z = start_z; z < end_z; z += h)
+    {
+        double full_sum = 0;
+        double ext_sum = 0;
+        for (double x = start_x; x < end_x; x += h)
+        {
+            for (double y = start_y; y < end_y; y += h)
+            {
+                full_sum += Potential(vertices, Vector{x, y, z}, h) + ShealthPotential(vertices, Vector{x, y, z}, R) + phi_a->getValue(Vector{x, y, z});
+                ext_sum += phi_a->getValue(Vector{x, y, z});
+            }
+        }
+        fout << z << ' ' << full_sum / ((end_x - start_x) * (end_y - start_y)) << ' ' << ext_sum / ((end_x - start_x) * (end_y - start_y)) << '\n';
+    }
+    fout.close();
 }
