@@ -318,7 +318,10 @@ class LightningTree(object):
                                            self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
                                            self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
                                            self.distribution(self.df_vertex, 'z', 'mean', 'phi')]),
-            
+            'default' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                                   self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                   self.distribution(self.df_vertex, 'z', 'mean', 'phi'),
+                                   self.fi_def(self.df_vertex)])          
         }
         
         @app.callback(Output('graph_distrib', 'figure'),
