@@ -16,7 +16,7 @@ class LTBuilder
     uint64_t iter_number = 0;
 
     double h = conf_h;
-    double delta_t;
+    double delta_t = conf_delta_t;
     double r = conf_r;
     double R = conf_R;
     double q_plus_max;
