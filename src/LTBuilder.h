@@ -5,6 +5,7 @@
 #include "Vertex.h"
 #include "Edge.h"
 #include "ExternalField.h"
+#include "config.h"
 
 class LTBuilder
 {
@@ -14,22 +15,22 @@ class LTBuilder
     
     uint64_t iter_number = 0;
 
-    double h = 100;
+    double h = conf_h;
     double delta_t;
-    double r = 0.01;
-    double R = 50;
+    double r = conf_r;
+    double R = conf_R;
     double q_plus_max;
     double q_minus_max;
     double Q_plus_s;
     double Q_minus_s;
-    double resistance = 5;
-    double E_plus = 50;
-    double E_minus = 100;
-    double E_b = 0;
-    double E_0 = 0;
-    double eta = 0;
-    double beta = 0;
-    double sigma = 1;
+    double resistance = conf_resistance;
+    double E_plus = conf_E_plus;
+    double E_minus = conf_E_minus;
+    double E_b = conf_E_b;
+    double E_0 = conf_E_0;
+    double eta = conf_eta;
+    double beta = conf_beta;
+    double sigma = conf_sigma;
     size_t n_peripheral_layers;
     std::shared_ptr<ExternalField> phi_a;
 

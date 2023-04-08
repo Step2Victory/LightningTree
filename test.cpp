@@ -110,7 +110,7 @@ int main(){
 
 
     // GenerateSessions();
-    int n_iter = 5000;
+    int n_iter = 1000;
     start = std::chrono::system_clock::now();
     lt->ParamsInfo();
     for (int i = 0; i < n_iter; ++i)

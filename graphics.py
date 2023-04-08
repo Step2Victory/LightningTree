@@ -105,8 +105,8 @@ class LightningTree(object):
         return: Сортированные по высоте данные с распределением потенциала
         """
         fi_list = []
-        step = 10
-        for h in range(df.z.min(), df.z.max()+step, step):
+        step = (int) ((df.z.max() - df.z.min()) / (df.nunique().z -1))
+        for h in range(df.z.min(), df.z.max() + step, step):
             fi = 0
             for index, row in df.iterrows():
                 if row.y == 0 and row.x == 0 and h == row.z:
@@ -117,8 +117,7 @@ class LightningTree(object):
                                         - 1 / (Vector([0-row.x, 0 - row.y, h+row.z]).radius()))
             fi_list.append([h, fi])
         
-        result = pd.DataFrame(fi_list, columns=['z', 'fi'])
-        return result
+        return pd.DataFrame(fi_list, columns=['z', 'fi'])
         # fi = pd.DataFrame()          
         # for i, row in df.iterrows():
         #     fi[i] = df['z'].apply(lambda h: k * row[charge] * (1 / (Vector([0-row.x, 0 - row.y, h-row.z]).radius()+5) - 
@@ -318,6 +317,10 @@ class LightningTree(object):
                                            self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
                                            self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
                                            self.distribution(self.df_vertex, 'z', 'mean', 'phi')]),
+            'default' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+                                   self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+                                   self.distribution(self.df_vertex, 'z', 'mean', 'phi'),
+                                   self.fi_def(self.df_vertex)])
             
         }
         
