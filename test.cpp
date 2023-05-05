@@ -72,16 +72,16 @@ int main(){
     // auto field = std::make_shared<ConstField>(300000);
     
     
-    double h = 200, E_plus = 150000;
+    double h = 100, E_plus = 150000;
     double start_x = -5 * h;
     double end_x = 5 * h;
     double start_y = -5 * h;
     double end_y = 5 * h;
-    double start_z = 8000 - 20 * h;
-    double end_z = 8000 + 20 * h;
+    double start_z = 9000 - 20 * h;
+    double end_z = 9000 + 20 * h;
     std::vector layers = {
-        ChargeLayer{.p_0 = 0.000001, .h = h, .L = 200, .r=Vector{0, 0, 8000}, .a=1},
-        ChargeLayer{.p_0 = 0.000001, .h = h, .L = 200, .r=Vector{0, 0, 10000}, .a=1}};
+        ChargeLayer{.p_0 = -0.0000005, .h = h, .L = 200, .r=Vector{0, 0, 8000}, .a=1},
+        ChargeLayer{.p_0 = 0.0000005, .h = h, .L = 200, .r=Vector{0, 0, 10000}, .a=1}};
     auto start = std::chrono::system_clock::now();
     auto field = std::make_shared<TableField>(layers, start_x, start_y, start_z, end_x, end_y, end_z, h);
     auto end = std::chrono::system_clock::now();
@@ -90,27 +90,31 @@ int main(){
     // field->DeduceMult(E_plus, h);
     std::shared_ptr<ExternalField> ef = field;
     auto lt =  LTBuilder()
-                    .SetPeripheralLayers(1000)
+                    .SetPeripheralLayers(4000)
                     .SetResistance(1)
                     .SetExternalField(ef)
                     .SetEPlus(E_plus)
                     .SetEMinus(2 * E_plus)
                     .SetE0(100000)
                     .SetEb(3000000)
-                    .SetSigma(1)
                     .SetH(h)
-                    .Setr(h / 100)
-                    .SetR(h)
-                    .SetEdge(std::make_shared<Vertex>(Vector{0, 0, 8000.0}, 0, 0), std::make_shared<Vertex>(Vector{0, 0, 8000 + h}, 0, 0))
+                    .Setr(0.01)
+                    .SetR(h / 2)
+                    .SetAlpha(5 * 1e-8)
+                    .SetBeta(10)
+                    .SetSigma(1e-5)
+                    .SetEdge(std::make_shared<Vertex>(Vector{0, 0, 9000.0}, 0, 0), std::make_shared<Vertex>(Vector{0, 0, 9000 + h}, 0, 0))
+                    .SetSigma(1e-5)
                     .CountDeltat()
                     .Countqmax()
                     .CountQs()
+                    .MultiplyDeltat(1.0 / 1000)
                     .CreateLightningTree<LightningTree>();
     
 
 
     // GenerateSessions();
-    int n_iter = 1000;
+    int n_iter = 500000;
     start = std::chrono::system_clock::now();
     lt->ParamsInfo();
     for (int i = 0; i < n_iter; ++i)
@@ -118,13 +122,15 @@ int main(){
         try
         {
             lt->NextIter();
+            // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
+            // lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
         }
         catch(const std::exception& e)
         {
             std::cerr << e.what() << '\n';
             break;
         }
-        lt->Info();
+        // lt->Info();
         // lt->ReturnFiles(path_data + "/vertex_table.txt", path_data + "/edge_table.txt", path_data + "/q_history_1.txt", path_data + "/Q_history.txt");
     }
     end = std::chrono::system_clock::now();

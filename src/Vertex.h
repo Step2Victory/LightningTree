@@ -10,6 +10,7 @@ struct Vertex
     double Q;
     std::vector<double> q_history;
     std::vector<double> Q_history;
+    
     inline void Memorize()
     {
         q_history.push_back(q);
@@ -38,7 +39,7 @@ inline double Potential(VertexPtr vertex, const Vector& point, double h)
 {
     if (Abs(vertex->point - point) < kEps)
     {
-        return vertex->q / (4 * pi * epsilon_0 * (h/2));
+        return vertex->q / (4 * pi * epsilon_0 * h);
     }
     return vertex->q / (4 * pi * epsilon_0 * (Abs(vertex->point - point)));
 }
@@ -47,7 +48,7 @@ inline double ShealthPotential(VertexPtr charge, const Vector& point, double R)
 {
     if (Abs(charge->point - point) < kEps)
     {
-        return charge->Q / (4 * pi * epsilon_0 * (R/2));
+        return charge->Q / (4 * pi * epsilon_0 * R);
     }
     return charge->Q / (4 * pi * epsilon_0 * (Abs(charge->point - point)));
 }
