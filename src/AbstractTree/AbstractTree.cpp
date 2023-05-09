@@ -5,18 +5,24 @@
 
 AbstractTree::AbstractTree(double h, double delta_t, double r, double R, double n_peripheral_layers, double q_plus_max, double q_minus_max, double Q_plus_s,
     double Q_minus_s, double resistance,
-    double E_plus, double E_minus, double eta, double beta, double sigma, std::shared_ptr<ExternalField> phi_a, 
+    double E_plus, double E_minus, double alpha, double beta, double sigma, std::shared_ptr<ExternalField> phi_a, 
     std::unordered_map<VertexPtr, std::vector<EdgePtr>> graph, std::unordered_set<EdgePtr> edges, std::unordered_set<VertexPtr> vertices) :
     graph(graph), edges(edges), vertices(vertices), h(h), delta_t(delta_t), r(r), R(R), q_plus_max(q_plus_max), q_minus_max(q_minus_max), 
-    Q_plus_s(Q_plus_s), Q_minus_s(Q_minus_s), resistance(resistance), E_plus(E_plus), E_minus(E_minus), eta(eta), beta(beta), sigma(sigma),
+    Q_plus_s(Q_plus_s), Q_minus_s(Q_minus_s), resistance(resistance), E_plus(E_plus), E_minus(E_minus), alpha(alpha), beta(beta), sigma(sigma),
     phi_a(phi_a), n_periferal_layers(n_peripheral_layers) {}; 
 
 void AbstractTree::NextIter() // combine charges and edges count
 {
+    int n = 10e-3 / delta_t;
     NextIterCharges();
-    NextIterEdges();
-    DeletePeripheral();
-    Memorize();
+    NextIterSigma();
+    if (iter_number % n == 0)
+    {
+        std::cout << iter_number * delta_t << std::endl;
+        NextIterEdges();
+    }
+    // DeletePeripheral();
+    // Memorize();
 }
 
 void AbstractTree::Memorize()
@@ -33,6 +39,10 @@ double AbstractTree::ElectricFieldAlongEdge(EdgePtr edge) // реализаци�
     // double l = h;
     double phi_1 = Potential(vertices, edge->from->point, h) + ShealthPotential(vertices, edge->from->point, R) + phi_a->getValue(edge->from->point); // формула (6)
     double phi_2 = Potential(vertices, edge->to->point, h) + ShealthPotential(vertices, edge->to->point,  R) + phi_a->getValue(edge->to->point);
+    if (std::isinf((phi_1 - phi_2) / l))
+    {
+        throw std::runtime_error{"Electric field along edge is infinity!"};
+    }
     return (phi_1 - phi_2) / l;
 }
 
@@ -173,6 +183,31 @@ VertexPtr AbstractTree::CreateChargeInPoint(const Vector& point) // создае
     return std::make_shared<Vertex>(point, 0, 0);
 }
 
+EdgePtr test = nullptr;
+void AbstractTree::NextIterSigma()
+{
+    for (auto& edge: edges)
+    {
+        if (!test)
+        {
+            test = edge;
+        }
+        
+        auto E = ElectricFieldAlongEdge(edge);
+        if (edge == test && iter_number % 1000 == 1)
+        {
+            std::cout << edge->sigma << " " << E << " " << edge->from->Q << ' ' << edge->to->Q << std::endl;
+        }
+        // auto delta_sigma = (alpha * E * E - beta) * edge->sigma * delta_t;
+        edge->sigma = edge->sigma * std::exp((alpha * E * E - beta) * delta_t);
+
+        if (std::isinf(edge->sigma))
+        {
+            throw std::runtime_error{"Sigma is infinity!"};
+        }
+    }
+}
+
 void AbstractTree::NextIterCharges() // count new charges
 {
     std::unordered_map<VertexPtr, std::pair<double, double>> delta_charges;
@@ -239,10 +274,10 @@ void AbstractTree::ReturnFiles(const std::filesystem::path& table_vertex, const 
     }
     fout.close();
     fout.open(table_edges);
-    fout << "id" << ' ' << "from" << ' ' << "to" << ' ' << "current" << '\n';
+    fout << "id" << ' ' << "from" << ' ' << "to" << ' ' << "current" << ' ' << "sigma" <<  '\n';
     for (auto edge: edges)
     {
-        fout << edge << ' ' << *edge << ' ' << CurrentAlongEdge(edge)<< '\n';
+        fout << edge << ' ' << *edge << ' ' << std::abs(CurrentAlongEdge(edge))<< ' ' << edge->sigma << '\n';
     }
     fout.close();
     fout.open(table_q_history);
@@ -286,7 +321,7 @@ void AbstractTree::SavePhiInfo(const std::filesystem::path& phi_info, double sta
                 ext_sum += phi_a->getValue(Vector{x, y, z});
             }
         }
-        fout << z << ' ' << full_sum / ((end_x - start_x) * (end_y - start_y)) << ' ' << ext_sum / ((end_x - start_x) * (end_y - start_y)) << '\n';
+        fout << z << ' ' << full_sum * (h * h) / ((end_x - start_x) * (end_y - start_y)) << ' ' << ext_sum * (h * h) / ((end_x - start_x) * (end_y - start_y)) << '\n';
     }
     fout.close();
 }

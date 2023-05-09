@@ -1,9 +1,15 @@
 #include "LightningTree.h"
 #include "RandomEdgeIterator.h"
+#include "MaxPotentialEdge.h"
+#include <ranges>
 
 
 std::mt19937 gen(42);
 std::uniform_real_distribution<> dis(0, 1);
+
+
+
+
 
 // Lightning Tree
 /////////////////
@@ -27,26 +33,26 @@ bool LightningTree::MakeEdge(EdgePtr edge)
     double mult = std::pow(2, std::max(static_cast<int>(graph[start_vertex].size() - 1), 0));
     // E /= mult;
     // реализация формулы (12) из Leaders.pdf
+    // if (E > E_plus)
+    // {
+    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    //     return (1 - std::exp(-std::pow((std::abs(E - E_plus) / E_plus), 1))) > probability;
+    // }
+    // else if (E < E_minus)
+    // {
+    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
+    //     return (1 - std::exp(-std::pow((std::abs(-E - E_minus) / E_minus), 1))) > probability;
+    // }
     if (E > E_plus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow((std::abs(E - E_plus) / E_plus), 1))) > probability;
+        return (1 - std::exp(-std::pow(((E - E_plus)/ E_plus), 1))) > probability;
     }
-    else if (E < E_minus)
+    else if (-E > E_minus)
     {
         // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-        return (1 - std::exp(-std::pow((std::abs(-E - E_minus) / E_minus), 1))) > probability;
+        return (1 - std::exp(-std::pow(((-E - E_minus)/ E_minus), 1))) > probability;
     }
-    // if (E > 0)
-    // {
-    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-    //     return (1 - std::exp(-std::pow(((E)/ E_plus), 1))) > probability;
-    // }
-    // else if (E < 0)
-    // {
-    //     // std::cout << E << ' ' << (1 - std::exp(-std::pow((E / E_plus), 2.5))) << std::endl;
-    //     return (1 - std::exp(-std::pow(((-E)/ E_minus), 1))) > probability;
-    // }
     
     return false;
 }
@@ -64,14 +70,10 @@ void LightningTree::NextIterEdges() // count new edges using dis
     for (auto& elem : graph)
     {
         VertexPtr vertex = elem.first;
-        if (graph.find(vertex) == graph.end())
-        {
-            std::cout << 'A';
-        }
         // std::vector<EdgePtr> edges_in_current_elem = elem.second;
-        if (IsAbleToGrow(vertex))
+        // if (IsAbleToGrow(vertex))
         {
-            for (auto [i, j, k] : RandomPointGenerator())
+            for (auto [i, j, k] : MaxPotenialPoint(GetRes(vertex)))
             {
                 bool find_in_point = false;
                 Vector point = vertex->point + Vector{i * h, j * h, k * h};
@@ -87,7 +89,8 @@ void LightningTree::NextIterEdges() // count new edges using dis
                 }
                 if (graph[vertex].size() < 3)
                 {
-                     if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
+                    
+                    if (EdgePtr edge = std::make_shared<Edge>(vertex, new_vertex, sigma); MakeEdge(edge))
                     {
                          edges.insert(edge);
                          graph[vertex].push_back(edge);
@@ -107,4 +110,29 @@ void LightningTree::NextIterEdges() // count new edges using dis
     graph.insert(new_graph.begin(), new_graph.end());
 }
 
+
+std::array<std::pair<double, std::array<int, 3>>, 26> LightningTree::GetRes(VertexPtr vertex)
+{
+    std::array<std::pair<double, std::array<int, 3>>, 26> res_;
+    size_t s = 0;
+    for (int i = -1; i < 2; ++i)
+    {
+        for (int j = -1; j < 2; ++j)
+        {
+            for (int k = -1; k < 2; ++k)
+            {
+                if (i == 0 && j == 0 && k == 0)
+                {
+                    continue;
+                }
+                Vector new_point = vertex->point + Vector{i * h, j * h, k * h};
+                EdgePtr edge = std::make_shared<Edge>(vertex, std::make_shared<Vertex>(new_point, 0), sigma);
+                double E = std::abs(ElectricFieldAlongEdge(edge));
+                std::array<int, 3> arr = {i, j, k};
+                res_[s++] = std::pair<double, std::array<int, 3>>(E, arr);
+            }
+        }
+    }
+    return res_;
+}
 

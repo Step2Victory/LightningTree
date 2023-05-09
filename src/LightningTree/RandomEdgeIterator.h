@@ -92,7 +92,7 @@ public:
 
 };
 
-RandomPointGenerator RandomPoint()
+inline RandomPointGenerator RandomPoint()
 {
     return RandomPointGenerator{};
 }
