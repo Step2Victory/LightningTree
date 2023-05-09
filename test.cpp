@@ -122,8 +122,10 @@ int main(){
         try
         {
             lt->NextIter();
-            // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
-            // lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
+            if(i % 10000 == 0){
+                lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
+                lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
+            }
         }
         catch(const std::exception& e)
         {
@@ -131,7 +133,7 @@ int main(){
             break;
         }
         // lt->Info();
-        // lt->ReturnFiles(path_data + "/vertex_table.txt", path_data + "/edge_table.txt", path_data + "/q_history_1.txt", path_data + "/Q_history.txt");
+        // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     }
     end = std::chrono::system_clock::now();
     std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
