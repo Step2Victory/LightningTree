@@ -18,7 +18,7 @@ void AbstractTree::NextIter() // combine charges and edges count
     NextIterSigma();
     if (iter_number % n == 0)
     {
-        std::cout << iter_number * delta_t << std::endl;
+        std::cout << "Iter number: " << iter_number << std::endl;
         NextIterEdges();
     }
     // DeletePeripheral();
@@ -194,10 +194,10 @@ void AbstractTree::NextIterSigma()
         }
         
         auto E = ElectricFieldAlongEdge(edge);
-        if (edge == test && iter_number % 1000 == 1)
-        {
-            std::cout << edge->sigma << " " << E << " " << edge->from->Q << ' ' << edge->to->Q << std::endl;
-        }
+        // if (edge == test && iter_number % 1000 == 1)
+        // {
+        //     std::cout << edge->sigma << " " << E << " " << edge->from->Q << ' ' << edge->to->Q << std::endl;
+        // }
         // auto delta_sigma = (alpha * E * E - beta) * edge->sigma * delta_t;
         edge->sigma = edge->sigma * std::exp((alpha * E * E - beta) * delta_t);
 
