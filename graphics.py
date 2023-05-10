@@ -1,6 +1,8 @@
 import plotly.graph_objects as go
+import plotly.io as pio
 import pandas as pd
-import math
+import math#, time
+import multiprocessing as mps
 
 from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
@@ -56,8 +58,21 @@ class LightningTree(object):
         # self.df_q_history = self.open_file(folder+'/q_history_1.txt')
         # self.df_Q_history = self.open_file(folder+'/Q_history.txt')
 
+
+    def outImages(self, folder:str, format:str, i:int = -1):
+        if i != -1:
+            pio.write_image(self.figure_tree, folder + "/tree_%s.%s" % (i, format), format)
+            for plot in self.figure_plots:
+                pio.write_image(self.figure_plots[plot], folder + "/%s_%s.%s" % (plot, i, format), format)
+        else:
+            pio.write_image(self.figure_tree, folder + "/tree.%s" % format, format)
+            for plot in self.figure_plots:
+                pio.write_image(self.figure_plots[plot], folder + "/%s.%s" % (plot, format), format)
+
+
     def __str__(self):
         return "({}, {})".format(self.figure_tree, self.figure_plots)
+
 
     def open_file(self, filename: str) -> pd.DataFrame:
         """
@@ -157,13 +172,13 @@ class LightningTree(object):
         return fig
 
 
-    def plot_two(self, df_q, df_Q):
-        data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
-                           mode='lines+markers', name='sum' + ' q'),
-                go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
-                           mode='lines+markers', name='sum' + ' Q')]
-        fig = go.Figure(data=data, layout={'uirevision': 'True'})
-        return fig
+    # def plot_two(self, df_q, df_Q):
+    #     data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
+    #                        mode='lines+markers', name='sum' + ' q'),
+    #             go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
+    #                        mode='lines+markers', name='sum' + ' Q')]
+    #     fig = go.Figure(data=data, layout={'uirevision': 'True'})
+    #     return fig
     
 
     def plots(self):
@@ -171,19 +186,21 @@ class LightningTree(object):
         Создания словаря графических объектов из 2D графиков
         """
         self.figure_plots = {
+            # вытащить в отдельный процесс(поток)
             "sum" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
                                 self.distribution(self.df_vertex, 'z', 'sum', 'Q')]),
             "avg" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
                                      self.distribution(self.df_vertex, 'z', 'mean', 'Q')]),
             'full_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi')]),
             'ext_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
-            
+            # вытащить в отдельный процесс(поток)
             'current' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current')]),
             'all' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
                                            self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
                                            self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
                                            self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
                                            self.distribution(self.df_vertex, 'z', 'mean', 'phi')]),
+            # вытащить в отдельный процесс(поток)
             'default' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
                                    self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
                                    self.distribution(self.df_vertex, 'z', 'mean', 'phi'),
@@ -198,7 +215,7 @@ class LightningTree(object):
         # Настройки для отображения графиков
         scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
         scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
-        setting = {'showbackground': False, 'showticklabels': False, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат
+        setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат
         setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат для оси z
 
         # Создание настройки отображения графического объекта graph_object
@@ -240,10 +257,25 @@ class LightningTree(object):
                                   opacity=0.1)
         
         data = [edge_trace, node_trace, case_trace]
-        self.figure_tree.update(data=data, layout=layout)
+        self.figure_tree = go.Figure(data=data, layout=layout)
         # result = go.Figure(data=data, layout=layout)
         # return result
-    
+
+#def outImageTree(lt:LightningTree, i:int, folder:str, format:str):
+#    lt.plot_tree()
+#    pio.write_image(lt.figure_tree, folder + "/tree_%s.png" % (i), format)
+
+#def outImagePlots(lt:LightningTree, i:int, folder:str, format:str):
+#    lt.plots()
+#    for plot in lt.figure_plots:
+#        pio.write_image(lt.figure_plots[plot], folder + "/%s_%s.png" % (plot, i), format)
+
+#def out_images(lt_history:list[LightningTree], folder:str, format:str):
+#    i = 0
+#    for lt in lt_history:
+#        lt.outImages(folder, format, i)
+#        i+=1
+
 
 def run(folder:str, mode:str='external', interval:int=0):
     """
@@ -258,17 +290,26 @@ def run(folder:str, mode:str='external', interval:int=0):
     app = JupyterDash('SimpleExemple')
     disable = False
 
-    lt_history = [LightningTree(folder)]
-    lt_history[0].plot_tree()
-    lt_history[0].plots()
+    # start_time = time.time()
 
+    lt_history = [LightningTree(folder)]
+    lt_history[0].plot_tree()   # вытащить в отдельный процесс(поток)
+    # process = mps.Process(target=lt_history[0].plot_tree(), args=())
+    # process.start()
+    lt_history[0].plots()
+    # process.join()
+    # process.close()
+    
+    # print("--- %s seconds ---" % (time.time() - start_time))
+    
     if interval == 0:
         disable = True
 
     # Настройка и запуск Dash-приложения в зависимости от параметра
     app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
                         
-                        dcc.Interval(id='interval-component', interval=interval*1000, n_intervals=0, disabled=disable, max_intervals=20),
+                        dcc.Interval(id='interval-component', interval=interval*1000, n_intervals=0, disabled=disable),# max_intervals=20),
+                        # html.Div(html.Button('Out images', id='out_images_button', n_clicks=0, disabled = not disable)),
 
                         html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
                                     
@@ -294,7 +335,9 @@ def run(folder:str, mode:str='external', interval:int=0):
                                  
                                  style={'display': 'inline-block', 'width': '95%'}),
 
-                        html.Div(html.Button('Start/Stop', id='button'),
+                        html.Div([html.Button('Start/Stop', id='stop_button', n_clicks=0, disabled=disable),
+
+                                 html.Button('Out images', id='out_images_button', n_clicks=0, disabled=not disable)],
                                  
                                  style={'display': 'inline-block', 'width': '3%'})
                         ])
@@ -307,9 +350,7 @@ def run(folder:str, mode:str='external', interval:int=0):
     def update_graph_live(n, t):
         if n is None:
             raise JupyterDash.exceptions.PreventUpdate
-        
         time = -1
-        
         if ctx.triggered_id == 'interval-component':
             lt_history.append(LightningTree(folder))
             lt_history[-1].plot_tree()
@@ -317,8 +358,6 @@ def run(folder:str, mode:str='external', interval:int=0):
 
         if ctx.triggered_id == 'time_slider':
             time = t
-
-        # print("{} / {}".format(len(lt_history), n))
 
         return lt_history[time].figure_tree, len(lt_history)-1
     
@@ -337,23 +376,52 @@ def run(folder:str, mode:str='external', interval:int=0):
     
 
     @app.callback(Output('interval-component', 'disabled'),
-                  Input('button', 'n_clicks'),
+                  Output('out_images_button', 'disabled'),
+                  Input('stop_button', 'n_clicks'),
                   State('interval-component', 'disabled'))
     def toggle_interval(click, disabled):
         if click:
-            return not disabled
-        return disabled
+            return not disabled, disabled
+        return disabled, not disabled
+    
+    
+    @app.callback(Output('stop_button', 'disabled'),
+                  Input('out_images_button', 'n_clicks'),
+                  State('interval-component', 'disabled'))
+    def export_images(clicks, disabled):
+        if clicks and disabled:
+            i = 0
+            for lt in lt_history:
+                lt.outImages("LightningTree_data/Images", 'png', i)
+                i+=1
+        # if clicks%5 == 0:
+        #     return not disabled
+        return False
+    
     
     app.run_server(mode=mode)
 
 
 def main():
-    run("LightningTree_data", interval=1)
+    run("LightningTree_data", interval=2)
     # lt.run()#interval=1)
     # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'))
     # print(lt.fi_def(lt.df_vertex))
     # print(lt.df_vertex.z.sort_values()[::-1].unique())
-    
+
+    # start_time = time.time()
+    # lt = [LightningTree("LightningTree_data")]
+    # lt[0].plot_tree()
+    # lt[0].plots()
+    # pio.write_image(lt[0].figure_tree, "LightningTree_data/Images/tree_%s.png" % (1), 'png')
+    # for plot in lt[0].figure_plots:
+    #     pio.write_image(lt[0].figure_plots[plot], "LightningTree_data/Images/%s_%s.png" % (plot, 1), 'png')
+    # image_tree = [pio.to_image(lt[0].figure_tree, 'png')]
+    # funcion(lt[0], 1, "LightningTree_data/Images", 'png')
+    # funcion2(lt[0], 1, "LightningTree_data/Images", 'png')
+    # print("--- %s seconds ---" % (time.time() - start_time))
+
+
 
 
 if __name__ == '__main__':
