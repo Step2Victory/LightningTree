@@ -87,9 +87,9 @@ LTBuilder& LTBuilder::SetDeltat(double delta_t_)
     return *this;
 }
 
-LTBuilder& LTBuilder::SetEta(double eta_)
+LTBuilder& LTBuilder::SetAlpha(double alpha_)
 {
-    eta = eta_;
+    alpha = alpha_;
     return *this;
 }
 LTBuilder& LTBuilder::SetBeta(double beta_)
@@ -133,8 +133,8 @@ LTBuilder& LTBuilder::CountQs()
     }
     else
     {
-        Q_plus_s = 4 * pi * epsilon_0 * R * R * E_plus;
-        Q_minus_s = 4 * pi * epsilon_0 * R * R * E_minus;
+        Q_plus_s = 4 * pi * epsilon_0 * R * R * E_plus / 100;
+        Q_minus_s = 4 * pi * epsilon_0 * R * R * E_minus / 100;
     }
     
     return *this;

@@ -15,22 +15,22 @@ class LTBuilder
     
     uint64_t iter_number = 0;
 
-    double h = conf_h;
-    double delta_t = conf_delta_t;
-    double r = conf_r;
-    double R = conf_R;
+    double h;
+    double delta_t;
+    double r;
+    double R;
     double q_plus_max;
     double q_minus_max;
     double Q_plus_s;
     double Q_minus_s;
-    double resistance = conf_resistance;
-    double E_plus = conf_E_plus;
-    double E_minus = conf_E_minus;
-    double E_b = conf_E_b;
-    double E_0 = conf_E_0;
-    double eta = conf_eta;
-    double beta = conf_beta;
-    double sigma = conf_sigma;
+    double resistance;
+    double E_plus;
+    double E_minus;
+    double E_b;
+    double E_0;
+    double alpha;
+    double beta;
+    double sigma;
     size_t n_peripheral_layers;
     std::shared_ptr<ExternalField> phi_a;
 
@@ -43,7 +43,7 @@ public:
         return std::make_unique<Tree>(h, delta_t, r, R, n_peripheral_layers,
         q_plus_max, q_minus_max, Q_plus_s, 
         Q_minus_s, resistance, E_plus, E_minus, 
-        eta, beta, sigma, phi_a, graph, edges, vertices);
+        alpha, beta, sigma, phi_a, graph, edges, vertices);
     }
 
     LTBuilder& SetPeripheralLayers(size_t n_peripheral_layers);
@@ -65,7 +65,7 @@ public:
     LTBuilder& MultiplyDeltat(double d);
 
 
-    LTBuilder& SetEta(double eta);
+    LTBuilder& SetAlpha(double alpha);
     LTBuilder& SetBeta(double beta);
 
     LTBuilder& SetSigma(double sigma);
