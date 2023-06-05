@@ -167,7 +167,7 @@ class LightningTree(object):
                                     name=list_df[i].columns[1]), 
                             row=1, col=i+1)
         
-        fig.update_layout(uirevision=True)
+        fig.update_layout(uirevision=True, yaxis={'range':[7000,11000]})
         return fig
 
 
