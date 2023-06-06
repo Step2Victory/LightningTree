@@ -1,14 +1,13 @@
 import plotly.graph_objects as go
 import plotly.io as pio
 import pandas as pd
-import math#, time
-import multiprocessing as mps
+import math, io
+# import time, multiprocessing as mps
 
 from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
 from dash import dcc, html, Output, Input, State, ctx
-
-# from dash.dependencies import Output, Input
+from PIL import Image
 
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
@@ -95,7 +94,7 @@ class LightningTree(object):
         else:
             result = pd.read_csv(filename, delim_whitespace=True)
         return result
-    
+
 
     def distribution(self, df:pd.DataFrame, groupby:str, operarion:str, colomn:str) -> pd.DataFrame:
         """
@@ -112,7 +111,7 @@ class LightningTree(object):
         # return df.groupby([groupby]).agg({colomn:[operarion]})
         result = df.groupby([groupby]).agg({colomn:[operarion]})
         return pd.DataFrame({groupby : result.index.values[::-1], operarion+' '+colomn : result.values[::-1].ravel()})
-    
+
 
     def fi_def(self, df:pd.DataFrame) -> pd.DataFrame:
         """
@@ -168,17 +167,17 @@ class LightningTree(object):
                                     name=list_df[i].columns[1]), 
                             row=1, col=i+1)
         
-        fig.update_layout(uirevision=True)
+        fig.update_layout(uirevision=True, yaxis={'range':[7000,11000]})
         return fig
 
 
     # def plot_two(self, df_q, df_Q):
-    #     data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
-    #                        mode='lines+markers', name='sum' + ' q'),
-    #             go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
-    #                        mode='lines+markers', name='sum' + ' Q')]
-    #     fig = go.Figure(data=data, layout={'uirevision': 'True'})
-    #     return fig
+        # data = [go.Scatter(x=df_q.values[::-1].ravel(), y=df_q.index.values[::-1], 
+        #                    mode='lines+markers', name='sum' + ' q'),
+        #         go.Scatter(x=df_Q.values[::-1].ravel(), y=df_Q.index.values[::-1], 
+        #                    mode='lines+markers', name='sum' + ' Q')]
+        # fig = go.Figure(data=data, layout={'uirevision': 'True'})
+        # return fig
     
 
     def plots(self):
@@ -186,25 +185,18 @@ class LightningTree(object):
         Создания словаря графических объектов из 2D графиков
         """
         self.figure_plots = {
-            # вытащить в отдельный процесс(поток)
-            "sum" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+            "sum_q" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
                                 self.distribution(self.df_vertex, 'z', 'sum', 'Q')]),
-            "avg" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
+            "avg_q" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'),
                                      self.distribution(self.df_vertex, 'z', 'mean', 'Q')]),
-            'full_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi')]),
-            'ext_phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
-            # вытащить в отдельный процесс(поток)
+            'Phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi'),
+                               self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
             'current' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current')]),
-            'all' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
-                                           self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
-                                           self.distribution(self.df_vertex, 'z', 'mean', 'q'), 
-                                           self.distribution(self.df_vertex, 'z', 'mean', 'Q'),
-                                           self.distribution(self.df_vertex, 'z', 'mean', 'phi')]),
-            # вытащить в отдельный процесс(поток)
-            'default' : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'),
+            'default' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current'),
                                    self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
-                                   self.distribution(self.df_vertex, 'z', 'mean', 'phi'),
-                                   self.fi_def(self.df_vertex)])
+                                   self.distribution(self.df_edge, 'z', 'mean', 'sigma'),
+                                   self.fi_def(self.df_vertex)
+                                   ])
             
         }
 
@@ -215,8 +207,8 @@ class LightningTree(object):
         # Настройки для отображения графиков
         scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
         scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
-        setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат
-        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False} # Параметры отображения системы координат для оси z
+        setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': False, 'range':[-500, 500]} # Параметры отображения системы координат
+        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False, 'range':[7000,11000]} # Параметры отображения системы координат для оси z
 
         # Создание настройки отображения графического объекта graph_object
         layout = go.Layout(showlegend=False, hovermode='closest',
@@ -231,7 +223,7 @@ class LightningTree(object):
             array.append([None, None])
         df_edges = pd.DataFrame(array, columns=['id', 'current']).merge(self.df_vertex[['id', 'x', 'y', 'z']], on='id', how='left')
         # print(df_edges[df_edges.current.notna()].current.unique())
-
+        
         # Построение рёбер
         edge_trace = go.Scatter3d(x=df_edges.x, y=df_edges.y, z=df_edges.z, 
                                   line=dict(width=2, color=df_edges.current, colorscale=["darkslateblue", "crimson"], cmin=-1, cmax=1),
@@ -276,6 +268,34 @@ class LightningTree(object):
 #        lt.outImages(folder, format, i)
 #        i+=1
 
+def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg'):
+    print('Start export animations')
+    set_images = []
+    for lt in lt_history:
+        pic_defPlot = Image.open(io.BytesIO(pio.to_image(lt.figure_plots['default'], format)))
+        w, h = pic_defPlot.size
+
+        pic_PhiPlot = Image.open(io.BytesIO(pio.to_image(lt.figure_plots['Phi'], format)))
+        pic_tree = Image.open(io.BytesIO(pio.to_image(lt.figure_tree, 'png', w*2, h*2)))     
+        W, H = pic_tree.size
+
+        result = Image.new(pic_defPlot.mode, (w + W, H), color=0)
+        
+        result.paste(pic_defPlot, box=(0, 0))
+        result.paste(pic_PhiPlot, box=(0, h))
+        result.paste(pic_tree, box=(w, 0))
+
+        set_images.append(result)
+            
+    set_images[0].save(
+        folder + "/LightningTree.gif",
+        save_all=True,
+        append_images=set_images[1:],
+        optimize=True,
+        duration=200,
+        loop=0)
+    print('Finish')
+
 
 def run(folder:str, mode:str='external', interval:int=0):
     """
@@ -312,27 +332,20 @@ def run(folder:str, mode:str='external', interval:int=0):
                         # html.Div(html.Button('Out images', id='out_images_button', n_clicks=0, disabled = not disable)),
 
                         html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-                                    
-                                    dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum'}, 
-                                                {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg'},
-                                                {'label': "Распределение полного потенциала по высоте", 'value':'full_phi'},
-                                                {'label': "Распределение потенциала внешнего поля по высоте", 'value':'ext_phi'},
+                                    dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum_q'}, 
+                                                {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg_q'},
+                                                {'label': "Распределение потенциала по высоте", 'value':'Phi'},
                                                 {'label': "Распределение токов по высоте", "value" : "current"},
-                                                {'label': "Все графики", 'value':'all'}, {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
-
+                                                {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
                                     dcc.Graph(#figure=lt_history[-1].figure_plots['default'], 
                                               id='graph_distrib', style={'height': '80vh'})],
-                                    
                                     style={'display': 'inline-block', 'width': '39%'}),
 
                         html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-                                    
                                     dcc.Graph(figure=lt_history[-1].figure_tree, id='graph_tree', style={'height': '80vh'})],
-
                                     style={'display': 'inline-block', 'width': '59%'}),
 
                         html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable),
-                                 
                                  style={'display': 'inline-block', 'width': '95%'}),
 
                         html.Div([html.Button('Start/Stop', id='stop_button', n_clicks=0, disabled=disable),
@@ -348,12 +361,12 @@ def run(folder:str, mode:str='external', interval:int=0):
                   Input('interval-component', 'n_intervals'),
                   Input('time_slider', 'value'))
     def update_graph_live(n, t):
-        if n is None:
-            raise JupyterDash.exceptions.PreventUpdate
+        # if n is None:
+        #     raise JupyterDash.exceptions.PreventUpdate
         time = -1
         if ctx.triggered_id == 'interval-component':
             lt_history.append(LightningTree(folder))
-            lt_history[-1].plot_tree()
+            lt_history[-1].plot_tree() # вытащить в отдельный процесс (поток)
             lt_history[-1].plots()
 
         if ctx.triggered_id == 'time_slider':
@@ -390,10 +403,7 @@ def run(folder:str, mode:str='external', interval:int=0):
                   State('interval-component', 'disabled'))
     def export_images(clicks, disabled):
         if clicks and disabled:
-            i = 0
-            for lt in lt_history:
-                lt.outImages("LightningTree_data/Images", 'png', i)
-                i+=1
+            out_animations(lt_history, "LightningTree_data/Animations", 'jpg')
         # if clicks%5 == 0:
         #     return not disabled
         return False
@@ -402,8 +412,71 @@ def run(folder:str, mode:str='external', interval:int=0):
     app.run_server(mode=mode)
 
 
+def create_gif(folder:str, names:str|list[str], format:str='jpg', start:int=0, end:int=10):
+    # Список для хранения кадров.
+    def work(name):
+        frames = [Image.open(folder + "/Images/{}_{}.{}".format(name, start, format))]
+        # drtn = [1000]
+        # print(frames[0])
+        for i in range(start, end):
+            # Открываем изображение каждого кадра.
+            frame = Image.open(folder + "/Images/{}_{}.{}".format(name, i, format))
+            # Добавляем кадр в список с кадрами.
+            # if frame != frames[i-1]:
+            frames.append(frame)
+            # step = 1000/float(i-start+1)
+            # if step <= 100:
+            #     drtn.append(100)
+            # else:
+            #     drtn.append(int(step))
+
+        # Берем первый кадр и в него добавляем оставшееся кадры.
+        frames[0].save(
+            folder + f"/Animations/{name}.gif",
+            save_all=True,
+            append_images=frames[1:],  # Срез который игнорирует первый кадр.
+            optimize=True,
+            duration=200,
+            loop=0
+        )
+
+    if type(names) is str:
+        work(names)
+    else:
+        for n in names:
+            work(n)
+
+# def out_animations(lt_history:list[LightningTree], folder:str):
+#     gif_tree = []
+#     gif_plots = {'default':[]}
+#     for lt in lt_history:
+#         image_tree = pio.to_image(lt.figure_tree, 'jpg')
+#         gif_tree.append(Image.open(image_tree))
+#         for key, plot in lt.figure_plots:
+#             gif_plots[key].append(Image.open(pio.to_image(plot, 'jpg')))
+    
+#     # gif_tree[0].save(
+#     #     folder + "/tree.gif",
+#     #     save_all=True,
+#     #     appen_images=gif_tree[1:],
+#     #     optimize=True,
+#     #     duration=200,
+#     #     loop=0
+#     # )
+#     # for key, plot in gif_plots:
+#     #     plot[0].save(
+#     #         folder + f"/{key}.gif",
+#     #         save_all=True,
+#     #         appen_images=plot[1:],
+#     #         optimize=True,
+#     #         duration=200,
+#     #         loop=0
+#     #     )
+
+
 def main():
-    run("LightningTree_data", interval=2)
+    run("LightningTree_data", interval=1)
+
     # lt.run()#interval=1)
     # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'))
     # print(lt.fi_def(lt.df_vertex))
@@ -421,6 +494,7 @@ def main():
     # funcion2(lt[0], 1, "LightningTree_data/Images", 'png')
     # print("--- %s seconds ---" % (time.time() - start_time))
 
+    # create_gif("LightningTree_data", ["tree", "all", "default", "avg", "current", "ext_phi", "full_phi", "sum"], 'jpg', start=10, end=178)
 
 
 
