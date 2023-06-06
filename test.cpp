@@ -3,8 +3,10 @@
 #include "src/TestTree/TestTree.h"
 #include <chrono>
 #include <filesystem>
+#include <thread>
 #include "src/config.h"
 
+using namespace std::chrono_literals;
 
 void PrintCurrentState(const LightningTree& lt)
 {
@@ -71,7 +73,7 @@ void GenerateSessions()
 int main(){
     // auto field = std::make_shared<ConstField>(300000);
     
-    
+    auto t = std::chrono::system_clock::now();
     double h = 100, E_plus = 150000;
     double start_x = -5 * h;
     double end_x = 5 * h;
@@ -114,15 +116,22 @@ int main(){
 
 
     // GenerateSessions();
-    int n_iter = 500000;
+    int n_iter = 700000;
     start = std::chrono::system_clock::now();
+    
     lt->ParamsInfo();
+    
+    auto interval = 1s;
     for (int i = 0; i < n_iter; ++i)
     {
         try
         {
             lt->NextIter();
-            if(i % 10000 == 0){
+
+            if(i % 20000 == 0){
+                std::cout << "Output" << std::endl;
+                std::this_thread::sleep_until(t + interval);
+                t += interval;
                 lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
                 lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
             }

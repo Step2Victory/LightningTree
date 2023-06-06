@@ -8,9 +8,32 @@ from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
 from dash import dcc, html, Output, Input, State, ctx
 from PIL import Image
+from subprocess import Popen, PIPE
+
 
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
+
+path_to_cpp_exe = 'build/LightningTree'
+p = None
+
+def start_subprocess():
+    global p
+    if p is not None:
+        p.terminate()
+    p = Popen([path_to_cpp_exe], stdin = PIPE)
+
+def end_subprocess():
+    global p
+    if p is not None:
+        p.terminate()
+    p = None
+
+def start_end_subprocess():
+    global p
+    if p is None:
+        start_subprocess()
+
 
 class Vector(object):
     def __init__(self, _point: list[float]):
@@ -394,7 +417,9 @@ def run(folder:str, mode:str='external', interval:int=0):
                   State('interval-component', 'disabled'))
     def toggle_interval(click, disabled):
         if click:
+            end_subprocess()
             return not disabled, disabled
+        start_subprocess()
         return disabled, not disabled
     
     
