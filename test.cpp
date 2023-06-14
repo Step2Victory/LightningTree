@@ -120,25 +120,36 @@ int main(){
     start = std::chrono::system_clock::now();
     
     lt->ParamsInfo();
-    
+   
+    int response;
+    std::cout << 1 << std::endl;
+    std::cin >> response;
+
     auto interval = 1s;
     for (int i = 0; i < n_iter; ++i)
     {
+        if(response != 0) break;
+
         try
         {
             lt->NextIter();
 
             if(i % 20000 == 0){
+
                 std::cout << "Output" << std::endl;
                 std::this_thread::sleep_until(t + interval);
                 t += interval;
                 lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
                 lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
+
+                std::cout << 1 << std::endl;
+                std::cin >> response;
             }
         }
         catch(const std::exception& e)
         {
             std::cerr << e.what() << '\n';
+            std::cout << 0 << std::endl;
             break;
         }
         // lt->Info();
@@ -150,5 +161,6 @@ int main(){
     // // PrintCurrentState(*lt);
     lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
+    std::cout << 0 << std::endl;
     return 0;
 }
