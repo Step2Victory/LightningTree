@@ -144,8 +144,11 @@ int main(){
         catch(const std::exception& e)
         {
             // std::cerr << e.what() << '\n';
+            lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
+            lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
             std::cout << 0 << std::endl;
-            break;
+            
+            return;
         }
         // lt->Info();
         // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
