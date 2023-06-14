@@ -8,31 +8,38 @@ from plotly.subplots import make_subplots
 from jupyter_dash import JupyterDash
 from dash import dcc, html, Output, Input, State, ctx
 from PIL import Image
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
 
-path_to_cpp_exe = 'build/LightningTree'
+path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
 p = None
 
 def start_subprocess():
     global p
     if p is not None:
         p.terminate()
-    p = Popen([path_to_cpp_exe], stdin = PIPE)
+    print("Подрпроцесс моделирования молнии запущен")
+    p = Popen([path_to_cpp_exe], stdout = PIPE, stdin = PIPE, stderr = STDOUT)
+    p.stdin.write(b'1\r\n')
+    p.stdin.flush()
 
 def end_subprocess():
     global p
     if p is not None:
+        # p.stdin.write(b'0\r\n')
+        # p.stdin.flush()
         p.terminate()
+    print("Подпроцесс моделирования молнии остановлен")
     p = None
 
-def start_end_subprocess():
+def continue_subprocess():
     global p
-    if p is None:
-        start_subprocess()
+    if p is not None:
+        p.stdin.write(b'1\r\n')
+        p.stdin.flush()
 
 
 class Vector(object):
@@ -74,6 +81,7 @@ class LightningTree(object):
             """
             from_id = row['from']
             to_id = row['to']
+            print(self.df_vertex)
             return (self.df_vertex[self.df_vertex['id'] == from_id]['z'].item() + self.df_vertex[self.df_vertex['id'] == to_id]['z'].item()) / 2
         
         self.df_edge['z'] = self.df_edge.apply(get_middle_edge, axis=1)
@@ -105,17 +113,25 @@ class LightningTree(object):
         filename: Имя файла для чтения. Если файл находиться не в проекте, то указывается полное имя файла
         return: Данные файла
         """
-        result = pd.DataFrame()
-        if "history" in filename:
-            with open(filename, 'r') as file:
-                for line in file:
-                    array = (line.rstrip()).split(" ")
-                    temp = pd.DataFrame({array[0] : array[1:]})
-                    result = pd.concat([result, temp], axis=1)
-                    result = result.astype('float')
+        # result = pd.DataFrame()
+        # if "history" in filename:
+        #     with open(filename, 'r') as file:
+        #         for line in file:
+        #             array = (line.rstrip()).split(" ")
+        #             temp = pd.DataFrame({array[0] : array[1:]})
+        #             result = pd.concat([result, temp], axis=1)
+        #             result = result.astype('float')
                     
-        else:
+        # else:
+        try:
             result = pd.read_csv(filename, delim_whitespace=True)
+        except pd.errors.EmptyDataError:
+            if 'vertex_table' in filename:
+                result = pd.DataFrame([["0000026EBEB53920", 0, 0, 0, 0, 9000, 618974], ["0000026EBEB54A30",  0, 0, 0, 0, 9100, 1.99509e+07]], columns=["id", 'q', 'Q', 'x', 'y', 'z', "phi"])
+            elif 'edge_table' in filename:
+                result = pd.DataFrame(["0000026EBEA9FDC0", "0000026EBEB53920", "0000026EBEB54A30", 0.00060733, 1e-05], columns=["id", "from", "to", "current", "sigma"])
+            elif 'phi_info' in filename:
+                result = pd.DataFrame([7000, -5.80393e+07, -5.80393e+07], [7100, -6.5424e+07, -6.5424e+07], columns=["z", "full_phi", "ext_phi"])
         return result
 
 
@@ -230,8 +246,8 @@ class LightningTree(object):
         # Настройки для отображения графиков
         scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
         scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
-        setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': False, 'range':[-500, 500]} # Параметры отображения системы координат
-        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': False, 'range':[7000,11000]} # Параметры отображения системы координат для оси z
+        setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': True, 'range':[-1000, 1000]} # Параметры отображения системы координат
+        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': True, 'range':[7000,11000]} # Параметры отображения системы координат для оси z
 
         # Создание настройки отображения графического объекта graph_object
         layout = go.Layout(showlegend=False, hovermode='closest',
@@ -320,7 +336,7 @@ def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg')
     print('Finish')
 
 
-def run(folder:str, mode:str='external', interval:int=0):
+def run(folder:str, mode:str='external', interval:int=False):
     """
     Метод для запуска Dash-приложения
 
@@ -331,28 +347,29 @@ def run(folder:str, mode:str='external', interval:int=0):
     """
     # Создание Dash-приложения
     app = JupyterDash('SimpleExemple')
-    disable = False
-
-    # start_time = time.time()
+    disable = True
 
     lt_history = [LightningTree(folder)]
-    lt_history[0].plot_tree()   # вытащить в отдельный процесс(поток)
-    # process = mps.Process(target=lt_history[0].plot_tree(), args=())
-    # process.start()
+    lt_history[0].plot_tree()
     lt_history[0].plots()
-    # process.join()
-    # process.close()
     
-    # print("--- %s seconds ---" % (time.time() - start_time))
-    
-    if interval == 0:
-        disable = True
+    if interval:
+        disable = False
+        start_subprocess()
 
     # Настройка и запуск Dash-приложения в зависимости от параметра
     app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
                         
-                        dcc.Interval(id='interval-component', interval=interval*1000, n_intervals=0, disabled=disable),# max_intervals=20),
+                        dcc.Interval(id='interval-component', interval=1000, n_intervals=0, disabled=disable),# max_intervals=20),
                         # html.Div(html.Button('Out images', id='out_images_button', n_clicks=0, disabled = not disable)),
+
+                        html.Div(["Интервал: ",dcc.Input(id='interval', value='1', type='number'),
+                                  "Параметр 1:", dcc.Input(id='param1', value='0.0', type='number'),
+                                  "Параметр 2:", dcc.Input(id='param2', value='0.0', type='number'),
+                                  "Параметр 3:", dcc.Input(id='param3', value='0.0', type='number'),
+                                  html.Button('Start', id='start_button', n_clicks=0),
+                                  html.Button('Stop', id='stop_button', n_clicks=0)],
+                                  style={'horizontal-align' : 'right'}),
 
                         html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
                                     dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum_q'}, 
@@ -371,11 +388,11 @@ def run(folder:str, mode:str='external', interval:int=0):
                         html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable),
                                  style={'display': 'inline-block', 'width': '95%'}),
 
-                        html.Div([html.Button('Start/Stop', id='stop_button', n_clicks=0, disabled=disable),
+                        html.Div([html.Button('Pause', id='pause_button', n_clicks=0),
 
-                                 html.Button('Out images', id='out_images_button', n_clicks=0, disabled=not disable)],
+                                 html.Button('Out animations', id='out_anim_button', n_clicks=0)],
                                  
-                                 style={'display': 'inline-block', 'width': '3%'})
+                                 style={'display': 'inline-block', 'vertical-align' : 'top', 'width': '3%'})
                         ])
     
 
@@ -388,21 +405,31 @@ def run(folder:str, mode:str='external', interval:int=0):
         #     raise JupyterDash.exceptions.PreventUpdate
         time = -1
         if ctx.triggered_id == 'interval-component':
-            lt_history.append(LightningTree(folder))
-            lt_history[-1].plot_tree() # вытащить в отдельный процесс (поток)
-            lt_history[-1].plots()
+            # print(p.stdout.readline())
+            if p.stdout.readline() == b'1\r\n':
+                print(p.stdout.readline())
+                lt_history.append(LightningTree(folder))
+                lt_history[-1].plot_tree()
+                lt_history[-1].plots()
+                continue_subprocess()
+            elif p.stdout.readline() == b'0\r\n':
+                print(p.stdout.readline())
+                end_subprocess()
+            else:
+                print(p.stdout.readline())
+                print("Ожидание подпроцесса")
 
         if ctx.triggered_id == 'time_slider':
             time = t
+            print("Выбран момент времени " + time)
 
         return lt_history[time].figure_tree, len(lt_history)-1
-    
 
     @app.callback(Output('graph_distrib', 'figure'),
                   Input('dropdown', 'value'),
                   Input('interval-component', 'n_intervals'),
                   Input('time_slider', 'value'))
-    def update_figure(value, n, t):
+    def update_plots(value, n, t):
         time = -1
 
         if ctx.triggered_id == 'time_slider':
@@ -410,28 +437,41 @@ def run(folder:str, mode:str='external', interval:int=0):
         
         return lt_history[time].figure_plots[value]
     
-
     @app.callback(Output('interval-component', 'disabled'),
-                  Output('out_images_button', 'disabled'),
+                  Output('time_slider', 'disabled'),
+                  Input('start_button', 'n_clicks'),
+                  Input('pause_button', 'n_clicks'),
                   Input('stop_button', 'n_clicks'),
+                  Input('out_anim_button', 'n_click'),
+                  Input('interval', 'value'),
                   State('interval-component', 'disabled'))
-    def toggle_interval(click, disabled):
-        if click:
-            end_subprocess()
-            return not disabled, disabled
-        start_subprocess()
-        return disabled, not disabled
+    def action_process(start_clicks, pause_clicks, stop_clicks, anim_clicks, interval, disabled):
+        if ctx.triggered_id == 'start_button':
+            if start_clicks and disabled:
+                start_subprocess()
+                return (False, # включение обновления по интервалу времени
+                        False) # отключение кнопки вывода анимации
+
+        if ctx.triggered_id == 'pause_button':
+            if pause_clicks:
+                print("Процесс приостановлен")
+                return (not disabled, # отключение или включение обновления по интервалу времени
+                        False) # включение или отключение кнопки вывода анимации
     
-    
-    @app.callback(Output('stop_button', 'disabled'),
-                  Input('out_images_button', 'n_clicks'),
-                  State('interval-component', 'disabled'))
-    def export_images(clicks, disabled):
-        if clicks and disabled:
-            out_animations(lt_history, "LightningTree_data/Animations", 'jpg')
-        # if clicks%5 == 0:
-        #     return not disabled
-        return False
+        if ctx.triggered_id == 'stop_button':
+            if stop_clicks and not disabled:
+                end_subprocess()
+                return (True, # отключение обновления по интервалу времени
+                        True) # включение кнопки вывода анимации
+        
+        if ctx.triggered_id == 'out_anim_button':
+            if anim_clicks and disabled:
+                print("Запущен экпорт анимации")
+                out_animations(lt_history, folder + "/Animations", 'jpg')
+                print("Экпорт завершён")
+                return True, False
+        
+        return disabled, disabled
     
     
     app.run_server(mode=mode)
@@ -500,7 +540,7 @@ def create_gif(folder:str, names:str|list[str], format:str='jpg', start:int=0, e
 
 
 def main():
-    run("LightningTree_data", interval=1)
+    run("LightningTree_data")
 
     # lt.run()#interval=1)
     # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'))
@@ -520,6 +560,13 @@ def main():
     # print("--- %s seconds ---" % (time.time() - start_time))
 
     # create_gif("LightningTree_data", ["tree", "all", "default", "avg", "current", "ext_phi", "full_phi", "sum"], 'jpg', start=10, end=178)
+
+    # start_subprocess()
+    # print("stdin: ")
+    # print(p.stdin.write(bytes(1)))
+    # print("stdout: ")
+    # print(p.stdout.readline())
+    # end_subprocess()
 
 
 
