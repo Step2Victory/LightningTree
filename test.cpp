@@ -87,7 +87,7 @@ int main(){
     auto start = std::chrono::system_clock::now();
     auto field = std::make_shared<TableField>(layers, start_x, start_y, start_z, end_x, end_y, end_z, h);
     auto end = std::chrono::system_clock::now();
-    std::cout << "External field preprocessing time " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "s" << std::endl;
+    // std::cout << "External field preprocessing time " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "s" << std::endl;
     // auto field = std::make_shared<NormalField>(2000, 8000, 335'000'000);
     // field->DeduceMult(E_plus, h);
     std::shared_ptr<ExternalField> ef = field;
@@ -119,36 +119,31 @@ int main(){
     int n_iter = 700000;
     start = std::chrono::system_clock::now();
     
-    lt->ParamsInfo();
+    // lt->ParamsInfo();
    
     int response;
     std::cout << 1 << std::endl;
     std::cin >> response;
 
-    auto interval = 1s;
     for (int i = 0; i < n_iter; ++i)
     {
-        if(response != 0) break;
-
+        if(response == 0) break;
         try
         {
             lt->NextIter();
 
             if(i % 20000 == 0){
-
-                std::cout << "Output" << std::endl;
-                std::this_thread::sleep_until(t + interval);
-                t += interval;
                 lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
                 lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
 
                 std::cout << 1 << std::endl;
+                std::cerr << 1 << std::endl;
                 std::cin >> response;
             }
         }
         catch(const std::exception& e)
         {
-            std::cerr << e.what() << '\n';
+            // std::cerr << e.what() << '\n';
             std::cout << 0 << std::endl;
             break;
         }
@@ -156,8 +151,8 @@ int main(){
         // lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     }
     end = std::chrono::system_clock::now();
-    std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
-    lt->Info();
+    // std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << '\n'; 
+    // lt->Info();
     // // PrintCurrentState(*lt);
     lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);

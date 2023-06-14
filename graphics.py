@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE, STDOUT
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
 
-path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
+path_to_cpp_exe = '/home/step/LightningTree/build/LightningTree'
 p = None
 
 def start_subprocess():
@@ -406,17 +406,18 @@ def run(folder:str, mode:str='external', interval:int=False):
         time = -1
         if ctx.triggered_id == 'interval-component':
             # print(p.stdout.readline())
-            if p.stdout.readline() == b'1\r\n':
-                print(p.stdout.readline())
+            response = int(p.stdout.readline())
+            if response == 1:
+                print(response)
                 lt_history.append(LightningTree(folder))
                 lt_history[-1].plot_tree()
                 lt_history[-1].plots()
                 continue_subprocess()
-            elif p.stdout.readline() == b'0\r\n':
-                print(p.stdout.readline())
+            elif response == 0:
+                print(response)
                 end_subprocess()
             else:
-                print(p.stdout.readline())
+                print(response)
                 print("Ожидание подпроцесса")
 
         if ctx.triggered_id == 'time_slider':
