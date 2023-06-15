@@ -73,6 +73,8 @@ public:
     virtual bool IsAbleToGrow(VertexPtr vertex) = 0;
     virtual bool MakeEdge(EdgePtr edge) = 0;
 
+    virtual double GetDeltaT() const;
+    virtual int GetIterNumber() const;
 
     void Info();
     void ParamsInfo();

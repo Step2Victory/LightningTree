@@ -47,8 +47,12 @@ def read_subprocess():
     global p
     if p is not None:
         try:
-            response, iter_number  = map(int, p.stdout.readline().split())
+            answer = p.stdout.readline().split()
+            response, iter_number, charges_number  = map(int, answer[:-1])
+            time = float(answer[-1])
             print("Номер итерации: ", iter_number)
+            print("Количество зарядов в графе", charges_number)
+            print("Время от начала процессв", time)
             return response
         except ValueError:
             print("Получено не число")

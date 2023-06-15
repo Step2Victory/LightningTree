@@ -27,6 +27,13 @@ int ReadResponse()
     return response;
 }
 
+void WriteAnswer(int response, const LightningTree& tree)
+{
+    int iter_number = tree.GetIterNumber();
+    double delta_t = tree.GetDeltaT();
+    std::cout << response << ' ' << iter_number << ' ' << tree.GetGraph().size() <<  ' ' << iter_number * delta_t<< std::endl;
+}
+
 int main(){
     // auto field = std::make_shared<ConstField>(300000);
     
@@ -49,7 +56,7 @@ int main(){
     // field->DeduceMult(E_plus, h);
     std::shared_ptr<ExternalField> ef = field;
     auto lt =  LTBuilder()
-                    .SetPeripheralLayers(4000)
+                    .SetPeripheralLayers(1)
                     .SetResistance(1)
                     .SetExternalField(ef)
                     .SetEPlus(E_plus)
@@ -75,12 +82,12 @@ int main(){
     // GenerateSessions();
     int n_iter = 700000;
     start = std::chrono::system_clock::now();
-    std::cout << 1 << ' ' << 0 << std::endl;
+    WriteAnswer(1, *lt);
     auto response = ReadResponse();
     
     for (int i = 0; i < n_iter; ++i)
     {
-        if(response == 0) break;
+        if(response == 0) return 0;
         try
         {
             lt->NextIter();
@@ -89,7 +96,7 @@ int main(){
                 lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
                 lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
 
-                std::cout << 1 << ' ' << i << std::endl;
+                WriteAnswer(1, *lt);
                 
                 response = ReadResponse();
             }
@@ -99,7 +106,7 @@ int main(){
             // std::cerr << e.what() << '\n';
             lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
             lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
-            std::cout << 0 << ' ' << i << std::endl;
+            WriteAnswer(0, *lt);
             return 0;
         }
         // lt->Info();
@@ -111,6 +118,6 @@ int main(){
     // // PrintCurrentState(*lt);
     lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
-    std::cout << 0 << ' ' << n_iter << std::endl;
+    WriteAnswer(0, *lt);
     return 0;
 }

@@ -20,8 +20,10 @@ void AbstractTree::NextIter() // combine charges and edges count
     {
         // std::cout << "Iter number: " << iter_number << std::endl;
         NextIterEdges();
+        DeletePeripheral();
+
     }
-    // DeletePeripheral();
+    
     // Memorize();
 }
 
@@ -206,6 +208,16 @@ void AbstractTree::NextIterSigma()
             throw std::runtime_error{"Sigma is infinity!"};
         }
     }
+}
+
+double AbstractTree::GetDeltaT() const
+{
+    return delta_t;
+}
+
+int AbstractTree::GetIterNumber() const
+{
+    return iter_number;
 }
 
 void AbstractTree::NextIterCharges() // count new charges
