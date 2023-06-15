@@ -14,17 +14,17 @@ from subprocess import Popen, PIPE, STDOUT
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
 
-path_to_cpp_exe = '/home/step/LightningTree/build/LightningTree'
+path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
 p = None
 
 def start_subprocess():
     global p
-    if p is not None:
-        p.terminate()
-    print("Подрпроцесс моделирования молнии запущен")
-    p = Popen([path_to_cpp_exe], stdout = PIPE, stdin = PIPE, stderr = STDOUT)
-    p.stdin.write(b'1\r\n')
-    p.stdin.flush()
+    if p is None:
+        print("Подрпроцесс моделирования молнии запущен")
+        p = Popen([path_to_cpp_exe], stdout = PIPE, stdin = PIPE, stderr = STDOUT)
+        p.stdin.write(b'1\r\n')
+        p.stdin.flush()
+    else: print("Процесс уже запущен")
 
 def end_subprocess():
     global p
@@ -32,7 +32,8 @@ def end_subprocess():
         # p.stdin.write(b'0\r\n')
         # p.stdin.flush()
         p.terminate()
-    print("Подпроцесс моделирования молнии остановлен")
+        print("Подпроцесс моделирования молнии остановлен")
+    else: print("Процесс не запущен")
     p = None
 
 def continue_subprocess():
@@ -40,6 +41,17 @@ def continue_subprocess():
     if p is not None:
         p.stdin.write(b'1\r\n')
         p.stdin.flush()
+
+def read_subprocess():
+    global p
+    if p is not None:
+        try:
+            response = int(p.stdout.readline())
+            return response
+        except ValueError:
+            print("Получено не число")
+            return -2
+    return -1
 
 
 class Vector(object):
@@ -81,7 +93,7 @@ class LightningTree(object):
             """
             from_id = row['from']
             to_id = row['to']
-            print(self.df_vertex)
+            # print(self.df_vertex)
             return (self.df_vertex[self.df_vertex['id'] == from_id]['z'].item() + self.df_vertex[self.df_vertex['id'] == to_id]['z'].item()) / 2
         
         self.df_edge['z'] = self.df_edge.apply(get_middle_edge, axis=1)
@@ -89,15 +101,15 @@ class LightningTree(object):
         # self.df_Q_history = self.open_file(folder+'/Q_history.txt')
 
 
-    def outImages(self, folder:str, format:str, i:int = -1):
-        if i != -1:
-            pio.write_image(self.figure_tree, folder + "/tree_%s.%s" % (i, format), format)
-            for plot in self.figure_plots:
-                pio.write_image(self.figure_plots[plot], folder + "/%s_%s.%s" % (plot, i, format), format)
-        else:
-            pio.write_image(self.figure_tree, folder + "/tree.%s" % format, format)
-            for plot in self.figure_plots:
-                pio.write_image(self.figure_plots[plot], folder + "/%s.%s" % (plot, format), format)
+    # def outImages(self, folder:str, format:str, i:int = -1):
+        # if i != -1:
+        #     pio.write_image(self.figure_tree, folder + "/tree_%s.%s" % (i, format), format)
+        #     for plot in self.figure_plots:
+        #         pio.write_image(self.figure_plots[plot], folder + "/%s_%s.%s" % (plot, i, format), format)
+        # else:
+        #     pio.write_image(self.figure_tree, folder + "/tree.%s" % format, format)
+        #     for plot in self.figure_plots:
+        #         pio.write_image(self.figure_plots[plot], folder + "/%s.%s" % (plot, format), format)
 
 
     def __str__(self):
@@ -203,10 +215,10 @@ class LightningTree(object):
             fig.add_trace(go.Scatter(x=list_df[i][list_df[i].columns[1]],
                                     y=list_df[i][list_df[i].columns[0]], 
                                     mode='lines+markers', 
-                                    name=list_df[i].columns[1]), 
+                                    name=list_df[i].columns[1]),
                             row=1, col=i+1)
         
-        fig.update_layout(uirevision=True, yaxis={'range':[7000,11000]})
+        fig.update_layout(uirevision=True, yaxis=dict(title="Размерность"))#, yaxis={'range':[7000,11000]})
         return fig
 
 
@@ -247,12 +259,12 @@ class LightningTree(object):
         scale_nodes = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "gray"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для зарядов
         scale_case = [(0, "darkblue"), (0.15, "blue"), (0.49, "yellow"), (0.5, "white"), (0.51, "yellow"), (0.85, "red"), (1, "darkred")] # цветовая шкала для чехлов
         setting = {'showbackground': False, 'showticklabels': True, 'showgrid': False, 'zeroline': True, 'range':[-1000, 1000]} # Параметры отображения системы координат
-        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': False, 'zeroline': True, 'range':[7000,11000]} # Параметры отображения системы координат для оси z
+        setting_z = {'showbackground': True, 'showticklabels': True, 'showgrid': True, 'zeroline': True, 'range':[7000,11000]} # Параметры отображения системы координат для оси z
 
         # Создание настройки отображения графического объекта graph_object
         layout = go.Layout(showlegend=False, hovermode='closest',
                        scene={'xaxis': setting, 'yaxis': setting, 'zaxis': setting_z},
-                       uirevision=True)
+                       uirevision=True, scene_aspectmode='manual', scene_aspectratio=dict(x=1, y=1, z=2))
         
         # Набор DataFrame'а для создания графа
         array = []
@@ -308,7 +320,7 @@ class LightningTree(object):
 #        i+=1
 
 def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg'):
-    print('Start export animations')
+    print('Запущен экпорт анимации')
     set_images = []
     for lt in lt_history:
         pic_defPlot = Image.open(io.BytesIO(pio.to_image(lt.figure_plots['default'], format)))
@@ -333,7 +345,7 @@ def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg')
         optimize=True,
         duration=200,
         loop=0)
-    print('Finish')
+    print('Экпорт завершён')
 
 
 def run(folder:str, mode:str='external', interval:int=False):
@@ -358,18 +370,18 @@ def run(folder:str, mode:str='external', interval:int=False):
         start_subprocess()
 
     # Настройка и запуск Dash-приложения в зависимости от параметра
-    app.layout = html.Div([html.H1("Модель молнии", style={'textAlign': 'center', 'color': 'gold'}),
+    app.layout = html.Div([html.H1("Моделирование молнии", style={'textAlign': 'center', 'color': 'gold'}),
                         
-                        dcc.Interval(id='interval-component', interval=1000, n_intervals=0, disabled=disable),# max_intervals=20),
-                        # html.Div(html.Button('Out images', id='out_images_button', n_clicks=0, disabled = not disable)),
-
-                        html.Div(["Интервал: ",dcc.Input(id='interval', value='1', type='number'),
-                                  "Параметр 1:", dcc.Input(id='param1', value='0.0', type='number'),
+                        dcc.Interval(id='interval-component', interval=1000, n_intervals=0, disabled=disable),
+                        
+                        html.Div(["Параметр 1:", dcc.Input(id='param1', value='0.0', type='number'),
                                   "Параметр 2:", dcc.Input(id='param2', value='0.0', type='number'),
                                   "Параметр 3:", dcc.Input(id='param3', value='0.0', type='number'),
-                                  html.Button('Start', id='start_button', n_clicks=0),
-                                  html.Button('Stop', id='stop_button', n_clicks=0)],
-                                  style={'horizontal-align' : 'right'}),
+                                  "Параметр 4: ",dcc.Input(id='param4', value='0.0', type='number'),
+                                  html.Button('Старт', id='start_button', n_clicks=0),
+                                  html.Button('Пауза', id='pause_button', n_clicks=0),
+                                  html.Button('Стоп', id='stop_button', n_clicks=0),
+                                  html.Button('Экспорт анимации', id='export_button', n_clicks=0)]),
 
                         html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
                                     dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum_q'}, 
@@ -382,18 +394,10 @@ def run(folder:str, mode:str='external', interval:int=False):
                                     style={'display': 'inline-block', 'width': '39%'}),
 
                         html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-                                    dcc.Graph(figure=lt_history[-1].figure_tree, id='graph_tree', style={'height': '80vh'})],
-                                    style={'display': 'inline-block', 'width': '59%'}),
+                                  dcc.Graph(figure=lt_history[-1].figure_tree, id='graph_tree', style={'height': '80vh'})],
+                                  style={'display': 'inline-block', 'width': '59%'}),
 
-                        html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable),
-                                 style={'display': 'inline-block', 'width': '95%'}),
-
-                        html.Div([html.Button('Pause', id='pause_button', n_clicks=0),
-
-                                 html.Button('Out animations', id='out_anim_button', n_clicks=0)],
-                                 
-                                 style={'display': 'inline-block', 'vertical-align' : 'top', 'width': '3%'})
-                        ])
+                        html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable))])
     
 
     @app.callback(Output('graph_tree', 'figure'),
@@ -406,23 +410,25 @@ def run(folder:str, mode:str='external', interval:int=False):
         time = -1
         if ctx.triggered_id == 'interval-component':
             # print(p.stdout.readline())
-            response = int(p.stdout.readline())
-            if response == 1:
-                print(response)
+            response = read_subprocess()
+            if response == -1:
+                print("Процесс е запущен")
+            elif response == 1:
+                # print(response)
                 lt_history.append(LightningTree(folder))
                 lt_history[-1].plot_tree()
                 lt_history[-1].plots()
                 continue_subprocess()
             elif response == 0:
-                print(response)
+                # print(response)
                 end_subprocess()
             else:
-                print(response)
+                # print(response)
                 print("Ожидание подпроцесса")
 
         if ctx.triggered_id == 'time_slider':
             time = t
-            print("Выбран момент времени " + time)
+            print("Выбран момент времени " + str(time))
 
         return lt_history[time].figure_tree, len(lt_history)-1
 
@@ -443,101 +449,70 @@ def run(folder:str, mode:str='external', interval:int=False):
                   Input('start_button', 'n_clicks'),
                   Input('pause_button', 'n_clicks'),
                   Input('stop_button', 'n_clicks'),
-                  Input('out_anim_button', 'n_click'),
-                  Input('interval', 'value'),
+                  Input('export_button', 'n_clicks'),
                   State('interval-component', 'disabled'))
-    def action_process(start_clicks, pause_clicks, stop_clicks, anim_clicks, interval, disabled):
+    def action_process(start_clicks, pause_clicks, stop_clicks, export_clicks, disabled):
         if ctx.triggered_id == 'start_button':
-            if start_clicks and disabled:
+            if disabled:
                 start_subprocess()
                 return (False, # включение обновления по интервалу времени
-                        False) # отключение кнопки вывода анимации
+                        False) # включение слайдера
 
         if ctx.triggered_id == 'pause_button':
-            if pause_clicks:
+            if not disabled:
                 print("Процесс приостановлен")
-                return (not disabled, # отключение или включение обновления по интервалу времени
-                        False) # включение или отключение кнопки вывода анимации
+            else: print("Процесс востановлен")
+            return (not disabled, # отключение или включение обновления по интервалу времени
+                    False) # включение или отключение слайдера
     
         if ctx.triggered_id == 'stop_button':
-            if stop_clicks and not disabled:
-                end_subprocess()
-                return (True, # отключение обновления по интервалу времени
-                        True) # включение кнопки вывода анимации
+            end_subprocess()
+            return (True, # отключение обновления по интервалу времени
+                    False) # включение слайдера
         
-        if ctx.triggered_id == 'out_anim_button':
-            if anim_clicks and disabled:
-                print("Запущен экпорт анимации")
+        if ctx.triggered_id == 'export_button':
+            if disabled:
                 out_animations(lt_history, folder + "/Animations", 'jpg')
-                print("Экпорт завершён")
-                return True, False
         
-        return disabled, disabled
+        return disabled, False
     
     
     app.run_server(mode=mode)
 
 
-def create_gif(folder:str, names:str|list[str], format:str='jpg', start:int=0, end:int=10):
+# def create_gif(folder:str, names:str|list[str], format:str='jpg', start:int=0, end:int=10):
     # Список для хранения кадров.
-    def work(name):
-        frames = [Image.open(folder + "/Images/{}_{}.{}".format(name, start, format))]
-        # drtn = [1000]
-        # print(frames[0])
-        for i in range(start, end):
-            # Открываем изображение каждого кадра.
-            frame = Image.open(folder + "/Images/{}_{}.{}".format(name, i, format))
-            # Добавляем кадр в список с кадрами.
-            # if frame != frames[i-1]:
-            frames.append(frame)
-            # step = 1000/float(i-start+1)
-            # if step <= 100:
-            #     drtn.append(100)
-            # else:
-            #     drtn.append(int(step))
+    # def work(name):
+    #     frames = [Image.open(folder + "/Images/{}_{}.{}".format(name, start, format))]
+    #     # drtn = [1000]
+    #     # print(frames[0])
+    #     for i in range(start, end):
+    #         # Открываем изображение каждого кадра.
+    #         frame = Image.open(folder + "/Images/{}_{}.{}".format(name, i, format))
+    #         # Добавляем кадр в список с кадрами.
+    #         # if frame != frames[i-1]:
+    #         frames.append(frame)
+    #         # step = 1000/float(i-start+1)
+    #         # if step <= 100:
+    #         #     drtn.append(100)
+    #         # else:
+    #         #     drtn.append(int(step))
 
-        # Берем первый кадр и в него добавляем оставшееся кадры.
-        frames[0].save(
-            folder + f"/Animations/{name}.gif",
-            save_all=True,
-            append_images=frames[1:],  # Срез который игнорирует первый кадр.
-            optimize=True,
-            duration=200,
-            loop=0
-        )
+    #     # Берем первый кадр и в него добавляем оставшееся кадры.
+    #     frames[0].save(
+    #         folder + f"/Animations/{name}.gif",
+    #         save_all=True,
+    #         append_images=frames[1:],  # Срез который игнорирует первый кадр.
+    #         optimize=True,
+    #         duration=200,
+    #         loop=0
+    #     )
 
-    if type(names) is str:
-        work(names)
-    else:
-        for n in names:
-            work(n)
-
-# def out_animations(lt_history:list[LightningTree], folder:str):
-#     gif_tree = []
-#     gif_plots = {'default':[]}
-#     for lt in lt_history:
-#         image_tree = pio.to_image(lt.figure_tree, 'jpg')
-#         gif_tree.append(Image.open(image_tree))
-#         for key, plot in lt.figure_plots:
-#             gif_plots[key].append(Image.open(pio.to_image(plot, 'jpg')))
-    
-#     # gif_tree[0].save(
-#     #     folder + "/tree.gif",
-#     #     save_all=True,
-#     #     appen_images=gif_tree[1:],
-#     #     optimize=True,
-#     #     duration=200,
-#     #     loop=0
-#     # )
-#     # for key, plot in gif_plots:
-#     #     plot[0].save(
-#     #         folder + f"/{key}.gif",
-#     #         save_all=True,
-#     #         appen_images=plot[1:],
-#     #         optimize=True,
-#     #         duration=200,
-#     #         loop=0
-#     #     )
+    # if type(names) is str:
+    #     work(names)
+    # else:
+    #     for n in names:
+    #         work(n)
 
 
 def main():
