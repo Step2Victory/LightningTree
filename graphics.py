@@ -14,7 +14,8 @@ from subprocess import Popen, PIPE, STDOUT
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
 
-path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
+# path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
+path_to_cpp_exe = '/home/step/LightningTree/build/LightningTree'
 p = None
 
 def start_subprocess():
@@ -46,7 +47,8 @@ def read_subprocess():
     global p
     if p is not None:
         try:
-            response = int(p.stdout.readline())
+            response, iter_number  = map(int, p.stdout.readline().split())
+            print("Номер итерации: ", iter_number)
             return response
         except ValueError:
             print("Получено не число")
@@ -412,7 +414,7 @@ def run(folder:str, mode:str='external', interval:int=False):
             # print(p.stdout.readline())
             response = read_subprocess()
             if response == -1:
-                print("Процесс е запущен")
+                print("Процесс не запущен")
             elif response == 1:
                 # print(response)
                 lt_history.append(LightningTree(folder))

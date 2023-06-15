@@ -18,7 +18,7 @@ void AbstractTree::NextIter() // combine charges and edges count
     NextIterSigma();
     if (iter_number % n == 0)
     {
-        std::cout << "Iter number: " << iter_number << std::endl;
+        // std::cout << "Iter number: " << iter_number << std::endl;
         NextIterEdges();
     }
     // DeletePeripheral();
