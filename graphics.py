@@ -13,9 +13,11 @@ from subprocess import Popen, PIPE, STDOUT
 
 eps0 = 8.85418781281313131313e-12
 k = 1 / (4 * math.pi * eps0)
+dimension = {'sum Q + q':'Кл', 'avg I':'А', 'avg Sigma':'См', 'sum Phi':'В', 'full Phi':'В'}
 
-# path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe'
-path_to_cpp_exe = '/home/step/LightningTree/build/LightningTree'
+path_to_cpp_exe = 'build/Release/LightningTree' # VS Code
+# path_to_cpp_exe = 'out/build/x64-Release/LightningTree.exe' # Visual studio
+# path_to_cpp_exe = '/home/step/LightningTree/build/LightningTree'
 p = None
 
 def start_subprocess():
@@ -48,7 +50,7 @@ def read_subprocess():
     if p is not None:
         try:
             answer = p.stdout.readline().split()
-            response, iter_number, charges_number  = map(int, answer[:-1])
+            response, iter_number, charges_number = map(int, answer[:-1])
             time = float(answer[-1])
             print("Номер итерации: ", iter_number)
             print("Количество зарядов в графе", charges_number)
@@ -87,25 +89,11 @@ class LightningTree(object):
         self.df_vertex = self.open_file(folder+'/vertex_table.txt')
         self.df_edge = self.open_file(folder+'/edge_table.txt')
         self.df_phi_info = self.open_file(folder+'/phi_info.txt')
-
-        def get_middle_edge(row):
-            """
-            Возвращает середину ребра
-            
-            Parametrs
-            ---------
-            row: Строка из датафрейма ребер
-            return: середину ребра, заданного в строке row
-            """
-            from_id = row['from']
-            to_id = row['to']
-            # print(self.df_vertex)
-            return (self.df_vertex[self.df_vertex['id'] == from_id]['z'].item() + self.df_vertex[self.df_vertex['id'] == to_id]['z'].item()) / 2
         
-        self.df_edge['z'] = self.df_edge.apply(get_middle_edge, axis=1)
+        self.df_edge['z'] = self.df_edge.apply(lambda row: (self.df_vertex[self.df_vertex['id'] == row['from']]['z'].item() + self.df_vertex[self.df_vertex['id'] == row['to']]['z'].item()) / 2, axis=1)
         # self.df_q_history = self.open_file(folder+'/q_history_1.txt')
         # self.df_Q_history = self.open_file(folder+'/Q_history.txt')
-
+    
 
     # def outImages(self, folder:str, format:str, i:int = -1):
         # if i != -1:
@@ -120,7 +108,20 @@ class LightningTree(object):
 
     def __str__(self):
         return "({}, {})".format(self.figure_tree, self.figure_plots)
-
+    
+    # def get_middle_edge(self, row):
+    #         """
+    #         Возвращает середину ребра
+            
+    #         Parametrs
+    #         ---------
+    #         row: Строка из датафрейма ребер
+    #         return: середину ребра, заданного в строке row
+    #         """
+    #         from_id = row['from']
+    #         to_id = row['to']
+    #         # print(self.df_vertex)
+    #         return (self.df_vertex[self.df_vertex['id'] == from_id]['z'].item() + self.df_vertex[self.df_vertex['id'] == to_id]['z'].item()) / 2
 
     def open_file(self, filename: str) -> pd.DataFrame:
         """
@@ -145,9 +146,9 @@ class LightningTree(object):
             result = pd.read_csv(filename, delim_whitespace=True)
         except pd.errors.EmptyDataError:
             if 'vertex_table' in filename:
-                result = pd.DataFrame([["0000026EBEB53920", 0, 0, 0, 0, 9000, 618974], ["0000026EBEB54A30",  0, 0, 0, 0, 9100, 1.99509e+07]], columns=["id", 'q', 'Q', 'x', 'y', 'z', "phi"])
+                result = pd.DataFrame([["lt1", 0, 0, 0, 0, 9000, 618974], ["lt2",  0, 0, 0, 0, 9100, 1.99509e+07]], columns=["id", 'q', 'Q', 'x', 'y', 'z', "phi"])
             elif 'edge_table' in filename:
-                result = pd.DataFrame(["0000026EBEA9FDC0", "0000026EBEB53920", "0000026EBEB54A30", 0.00060733, 1e-05], columns=["id", "from", "to", "current", "sigma"])
+                result = pd.DataFrame(["lt1", "lt1", "lt2", 0.00060733, 1e-05], columns=["id", "from", "to", "current", "sigma"])
             elif 'phi_info' in filename:
                 result = pd.DataFrame([7000, -5.80393e+07, -5.80393e+07], [7100, -6.5424e+07, -6.5424e+07], columns=["z", "full_phi", "ext_phi"])
         return result
@@ -207,7 +208,7 @@ class LightningTree(object):
         # return self.distribution(result,'z', 'mean', 'fi')
 
 
-    def plot(self, list_df:list[pd.DataFrame]) -> go.Figure:
+    def plot(self, _name:str, df:pd.DataFrame) -> go.Figure:
         """
         Создание 2D графика
         
@@ -216,15 +217,8 @@ class LightningTree(object):
         list_df: Лист данных для построения графика. (индекс - у, колонка - x)
         return: Графический объект
         """
-        fig = make_subplots(rows=1, cols=len(list_df), shared_yaxes=True, horizontal_spacing=0.02)
-        for i in range(len(list_df)):
-            fig.add_trace(go.Scatter(x=list_df[i][list_df[i].columns[1]],
-                                    y=list_df[i][list_df[i].columns[0]], 
-                                    mode='lines+markers', 
-                                    name=list_df[i].columns[1]),
-                            row=1, col=i+1)
-        
-        fig.update_layout(uirevision=True, yaxis=dict(title="Размерность"))#, yaxis={'range':[7000,11000]})
+        fig = go.Figure(go.Scatter(x=df[df.columns[1]], y=df[df.columns[0]], mode='lines+markers'),
+                        layout=dict(uirevision=True, yaxis={'range':[7000,11000]}, xaxis={'title':_name + ', ' + dimension[_name]}))
         return fig
 
 
@@ -242,18 +236,24 @@ class LightningTree(object):
         Создания словаря графических объектов из 2D графиков
         """
         self.figure_plots = {
-            "sum_q" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
-                                self.distribution(self.df_vertex, 'z', 'sum', 'Q')]),
-            "avg_q" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'),
-                                     self.distribution(self.df_vertex, 'z', 'mean', 'Q')]),
-            'Phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi'),
-                               self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
-            'current' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current')]),
-            'default' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current'),
-                                   self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
-                                   self.distribution(self.df_edge, 'z', 'mean', 'sigma'),
-                                   self.fi_def(self.df_vertex)
-                                   ])
+            'sum Q + q': self.plot('sum Q + q', pd.DataFrame(self.distribution(self.df_vertex, 'z', 'sum', 'Q').merge(self.distribution(self.df_vertex, 'z', 'sum', 'q'), 'left').apply(lambda row: pd.Series([row[0], row[1] + row[2]], index=['z', 'sum Q + q']), axis=1))),
+            'avg I': self.plot('avg I', self.distribution(self.df_edge, 'z', 'mean', 'current')),
+            'avg Sigma': self.plot('avg Sigma', self.distribution(self.df_edge, 'z', 'mean', 'sigma')),
+            'sum Phi': self.plot('sum Phi', self.fi_def(self.df_vertex)),
+            'full Phi': self.plot('full Phi', self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi'))
+
+            # "sum_q" : self.plot([self.distribution(self.df_vertex, 'z', 'sum', 'q'), 
+            #                     self.distribution(self.df_vertex, 'z', 'sum', 'Q')]),
+            # "avg_q" : self.plot([self.distribution(self.df_vertex, 'z', 'mean', 'q'),
+            #                          self.distribution(self.df_vertex, 'z', 'mean', 'Q')]),
+            # 'Phi' : self.plot([self.distribution(self.df_phi_info, 'z', 'mean', 'full_phi'),
+            #                    self.distribution(self.df_phi_info, 'z', 'mean', 'ext_phi')]),
+            # 'current' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current')]),
+            # 'default' : self.plot([self.distribution(self.df_edge, 'z', 'mean', 'current'),
+            #                        self.distribution(self.df_vertex, 'z', 'sum', 'Q'),
+            #                        self.distribution(self.df_edge, 'z', 'mean', 'sigma'),
+            #                        self.fi_def(self.df_vertex)
+            #                        ])
             
         }
 
@@ -328,18 +328,20 @@ class LightningTree(object):
 def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg'):
     print('Запущен экпорт анимации')
     set_images = []
+    w, h = 700, 500
+    H = h*2
     for lt in lt_history:
-        pic_defPlot = Image.open(io.BytesIO(pio.to_image(lt.figure_plots['default'], format)))
-        w, h = pic_defPlot.size
+        pic_tree = Image.open(io.BytesIO(pio.to_image(lt.figure_tree, 'png', width=w, height=H)))
+        result = Image.new(pic_tree.mode, (w*2, H), color=0)
 
-        pic_PhiPlot = Image.open(io.BytesIO(pio.to_image(lt.figure_plots['Phi'], format)))
-        pic_tree = Image.open(io.BytesIO(pio.to_image(lt.figure_tree, 'png', w*2, h*2)))     
-        W, H = pic_tree.size
+        for i, plot in enumerate(lt.figure_plots.values()):
+            if i < 3:
+                pic_plots = Image.open(io.BytesIO(pio.to_image(plot, format, width=int(w/3))))
+                result.paste(pic_plots, box=(int(w/3)*i, 0))
+            else:
+                pic_plots = Image.open(io.BytesIO(pio.to_image(plot, format, width=int(w/2))))
+                result.paste(pic_plots, box=(int(w/2)*(i-3), h))
 
-        result = Image.new(pic_defPlot.mode, (w + W, H), color=0)
-        
-        result.paste(pic_defPlot, box=(0, 0))
-        result.paste(pic_PhiPlot, box=(0, h))
         result.paste(pic_tree, box=(w, 0))
 
         set_images.append(result)
@@ -349,7 +351,7 @@ def out_animations(lt_history:list[LightningTree], folder:str, format:str='jpg')
         save_all=True,
         append_images=set_images[1:],
         optimize=True,
-        duration=200,
+        duration=500,
         loop=0)
     print('Экпорт завершён')
 
@@ -389,21 +391,27 @@ def run(folder:str, mode:str='external', interval:int=False):
                                   html.Button('Стоп', id='stop_button', n_clicks=0),
                                   html.Button('Экспорт анимации', id='export_button', n_clicks=0)]),
 
-                        html.Div([html.H4("Распределение заряда по высоте", style={'textAlign': 'center'}),
-                                    dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum_q'}, 
-                                                {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg_q'},
-                                                {'label': "Распределение потенциала по высоте", 'value':'Phi'},
-                                                {'label': "Распределение токов по высоте", "value" : "current"},
-                                                {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
-                                    dcc.Graph(#figure=lt_history[-1].figure_plots['default'], 
-                                              id='graph_distrib', style={'height': '80vh'})],
-                                    style={'display': 'inline-block', 'width': '39%'}),
+                        html.Div([html.Div([html.H4("Графики", style={'textAlign': 'center'}),
+                                            # dcc.Dropdown(options=[{'label':"Распределение суммы зарядов по высоте", 'value':'sum_q'}, 
+                                            #                       {'label': "Распределение среднего значения зарядов по высоте", 'value':'avg_q'},
+                                            #                       {'label': "Распределение потенциала по высоте", 'value':'Phi'},
+                                            #                       {'label': "Распределение токов по высоте", "value" : "current"},
+                                            #                       {'label': "По умолчанию", 'value':'default'}], value='default', id='dropdown'),
+                                            html.Div([dcc.Graph(figure=lt_history[-1].figure_plots['sum Q + q'], id='plot_q', style={'height': '40vh', 'width': '33%'}),
+                                                      dcc.Graph(figure=lt_history[-1].figure_plots['avg I'], id='plot_i', style={'height': '40vh', 'width': '32%'}),
+                                                      dcc.Graph(figure=lt_history[-1].figure_plots['avg Sigma'], id='plot_sigma', style={'height': '40vh', 'width': '32%'})],
+                                                      style={'display': 'flex', 'vertical-align':'top'}),
+                                            html.Div([dcc.Graph(figure=lt_history[-1].figure_plots['sum Phi'], id='plot_phi', style={'height': '40vh', 'width': '49%'}),
+                                                      dcc.Graph(figure=lt_history[-1].figure_plots['full Phi'], id='plot_full_phi', style={'height': '40vh', 'width': '49%'})],
+                                                      style={'display': 'flex', 'vertical-align':'down'})],
+                                            style={'width': '39%'}),
 
-                        html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
-                                  dcc.Graph(figure=lt_history[-1].figure_tree, id='graph_tree', style={'height': '80vh'})],
-                                  style={'display': 'inline-block', 'width': '59%'}),
+                                  html.Div([html.H4("Граф дерева", style={'textAlign': 'center'}),
+                                            dcc.Graph(figure=lt_history[-1].figure_tree, id='graph_tree', style={'height': '80vh'})],
+                                            style={'width': '59%'})],
+                                            style={'display':'flex'}),
 
-                        html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable))])
+                        html.Div(dcc.Slider(0, 1, step = 1, id='time_slider', disabled=disable))], style={'width': '100%'})
     
 
     @app.callback(Output('graph_tree', 'figure'),
@@ -438,17 +446,21 @@ def run(folder:str, mode:str='external', interval:int=False):
 
         return lt_history[time].figure_tree, len(lt_history)-1
 
-    @app.callback(Output('graph_distrib', 'figure'),
-                  Input('dropdown', 'value'),
+    @app.callback(Output('plot_q', 'figure'),
+                  Output('plot_i', 'figure'),
+                  Output('plot_sigma', 'figure'),
+                  Output('plot_phi', 'figure'),
+                  Output('plot_full_phi', 'figure'),
+                #   Input('dropdown', 'value'),
                   Input('interval-component', 'n_intervals'),
                   Input('time_slider', 'value'))
-    def update_plots(value, n, t):
+    def update_plots(n, t):
         time = -1
 
         if ctx.triggered_id == 'time_slider':
             time = t
         
-        return lt_history[time].figure_plots[value]
+        return list(lt_history[time].figure_plots.values())
     
     @app.callback(Output('interval-component', 'disabled'),
                   Output('time_slider', 'disabled'),
@@ -524,8 +536,12 @@ def run(folder:str, mode:str='external', interval:int=False):
 def main():
     run("LightningTree_data")
 
-    # lt.run()#interval=1)
-    # print(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'))
+    # lt = LightningTree("LightningTree_data")
+    # print(dimension[str(lt.df_vertex.columns[2])])
+    # print(lt.df_vertex)
+    # print(lt.df_edge.set_index('from').join(lt.df_vertex.set_index('id'), how='left'))
+        
+    # print(pd.DataFrame(lt.distribution(lt.df_vertex, 'z', 'sum', 'Q').merge(lt.distribution(lt.df_vertex, 'z', 'sum', 'q'), 'left').apply(lambda row: pd.Series([row[0], row[1] + row[2]], index=['z', 'sum Q + q']), axis=1)))
     # print(lt.fi_def(lt.df_vertex))
     # print(lt.df_vertex.z.sort_values()[::-1].unique())
 
