@@ -12,6 +12,7 @@ class LightningTree : public AbstractTree
 
     virtual bool MakeEdge(EdgePtr edge) override; // содержит реализацию формулы (12) из Leaders.pdf
 public:
+    LightningTree(const std::filesystem::path &path_to_config_file);
     LightningTree(double h, double delta_t, double r, double R, double n_peripheral_layers, double q_plus_max, double q_minus_max, double Q_plus_s,
     double Q_minus_s, double resistance,
     double E_plus, double E_minus, double alpha, double beta, double sigma, std::shared_ptr<ExternalField> phi_a, 

@@ -4,15 +4,13 @@
 #include <ranges>
 
 
-std::mt19937 gen(42);
-std::uniform_real_distribution<> dis(0, 1);
-
-
 
 
 
 // Lightning Tree
 /////////////////
+LightningTree::LightningTree(const std::filesystem::path &path_to_config_file) : AbstractTree(path_to_config_file) {}
+
 
 LightningTree::LightningTree(double h, double delta_t, double r, double R, double n_peripheral_layers, double q_plus_max, double q_minus_max, double Q_plus_s,
     double Q_minus_s, double resistance,

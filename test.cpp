@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <thread>
 #include "src/config.h"
+#include <glog/logging.h>
 
 using namespace std::chrono_literals;
 
@@ -34,9 +35,10 @@ void WriteAnswer(int response, const LightningTree& tree)
     std::cout << response << ' ' << iter_number << ' ' << tree.GetGraph().size() <<  ' ' << iter_number * delta_t<< std::endl;
 }
 
-int main(){
+int main(int argc, char* argv[]){
     // auto field = std::make_shared<ConstField>(300000);
-    
+    google::InitGoogleLogging(argv[0]);
+    google::SetLogDestination(google::GLOG_INFO,"./logs/INFO_");
     auto t = std::chrono::system_clock::now();
     double h = 100, E_plus = 150000;
     double start_x = -5 * h;
@@ -78,7 +80,7 @@ int main(){
                     .CreateLightningTree<LightningTree>();
     
 
-
+    lt->AllParams();
     // GenerateSessions();
     int n_iter = 700000;
     start = std::chrono::system_clock::now();
@@ -119,5 +121,6 @@ int main(){
     lt->ReturnFiles(path_data / "vertex_table.txt", path_data / "edge_table.txt", path_data /"q_history_1.txt", path_data /"Q_history.txt");
     lt->SavePhiInfo(path_data / "phi_info.txt", start_x, start_y, start_z, end_x, end_y, end_z);
     WriteAnswer(0, *lt);
+    google::ShutdownGoogleLogging();
     return 0;
 }
